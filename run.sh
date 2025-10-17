@@ -1,4 +1,5 @@
-## dừng container nếu đang chạy và xóa container cũ
+## dừng container nếu đang chạy và xóa container cũ và xóa image cũ
+docker stop ai-waiter-assistant || true 
 docker rm -f ai-waiter-assistant || true    
 
 ## pull github repo
