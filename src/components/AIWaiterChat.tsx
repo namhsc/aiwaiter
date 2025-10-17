@@ -233,7 +233,7 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart }: AIWaiter
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <h4 className="text-[#3E2723] text-sm">{item.name}</h4>
-                    <div className="text-[#C4941D] text-sm shrink-0">€{item.price.toFixed(2)}</div>
+                    <div className="text-[#C4941D] text-sm shrink-0">${item.price.toFixed(2)}</div>
                   </div>
                   <p className="text-xs text-[#8B7355] line-clamp-1">{item.description}</p>
                 </div>

@@ -6,8 +6,6 @@ import { CartScreen } from './components/CartScreen';
 import { PaymentScreen } from './components/PaymentScreen';
 import { FeedbackScreen } from './components/FeedbackScreen';
 import { MenuItem, CartItem } from './types/menu';
-import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner@2.0.3';
 
 type Screen = 'landing' | 'menu' | 'ai-chat' | 'cart' | 'payment' | 'feedback' | 'complete';
 
@@ -22,14 +20,12 @@ export default function App() {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
       
       if (existingItem) {
-        toast.success(`Added another ${item.name} to cart! 🛒`);
         return prevCart.map(cartItem =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       } else {
-        toast.success(`${item.name} added to cart! ✨`);
         return [...prevCart, { ...item, quantity: 1 }];
       }
     });
@@ -49,15 +45,10 @@ export default function App() {
   };
 
   const removeItem = (itemId: string) => {
-    const item = cart.find(i => i.id === itemId);
-    if (item) {
-      toast.info(`${item.name} removed from cart`);
-    }
     setCart(prevCart => prevCart.filter(item => item.id !== itemId));
   };
 
   const handleConfirmOrder = () => {
-    toast.success('Your order has been received! ✅');
     setCurrentScreen('payment');
   };
 
@@ -118,6 +109,7 @@ export default function App() {
           onUpdateQuantity={updateQuantity}
           onRemoveItem={removeItem}
           onConfirmOrder={handleConfirmOrder}
+          onOpenAI={() => setCurrentScreen('ai-chat')}
         />
       )}
 
@@ -125,6 +117,8 @@ export default function App() {
         <PaymentScreen
           total={cartTotal + (cartTotal * 0.19)}
           onComplete={handlePaymentComplete}
+          onOpenAI={() => setCurrentScreen('ai-chat')}
+          onAddMoreItems={() => setCurrentScreen('menu')}
         />
       )}
 
@@ -170,8 +164,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      <Toaster position="top-center" richColors />
     </div>
   );
 }

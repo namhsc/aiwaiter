@@ -1,7 +1,7 @@
 import { CartItem } from '../types/menu';
 import { Button } from './ui/button';
 import { motion } from 'motion/react';
-import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, Sparkles } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import {
   AlertDialog,
@@ -21,9 +21,10 @@ interface CartScreenProps {
   onUpdateQuantity: (itemId: string, newQuantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onConfirmOrder: () => void;
+  onOpenAI?: () => void;
 }
 
-export function CartScreen({ cart, onBack, onUpdateQuantity, onRemoveItem, onConfirmOrder }: CartScreenProps) {
+export function CartScreen({ cart, onBack, onUpdateQuantity, onRemoveItem, onConfirmOrder, onOpenAI }: CartScreenProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -208,6 +209,40 @@ export function CartScreen({ cart, onBack, onUpdateQuantity, onRemoveItem, onCon
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Floating AI Button */}
+      {onOpenAI && (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="fixed bottom-24 right-6 z-30"
+        >
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onOpenAI}
+            className="w-16 h-16 bg-[#C4941D] text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white"
+          >
+            <div className="text-2xl">🤵</div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#6B8E23] rounded-full border-2 border-white animate-pulse" />
+          </motion.button>
+        </motion.div>
+      )}
+
+      {/* Add More Items Button */}
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        className="fixed bottom-24 left-6 z-30"
+      >
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={onBack}
+          className="w-16 h-16 bg-white text-[#C4941D] rounded-full shadow-2xl flex items-center justify-center border-4 border-[#C4941D]"
+          title="Add more items"
+        >
+          <Plus className="w-8 h-8" />
+        </motion.button>
+      </motion.div>
     </div>
   );
 }

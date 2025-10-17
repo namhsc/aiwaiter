@@ -1,3 +1,13 @@
+export interface NutritionalInfo {
+  calories: number;
+  protein: number; // grams
+  carbs: number; // grams
+  fat: number; // grams
+  fiber: number; // grams
+  sodium: number; // mg
+  servingSize: string;
+}
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -9,6 +19,9 @@ export interface MenuItem {
   spicy?: boolean;
   vegetarian?: boolean;
   popular?: boolean;
+  nutritionalInfo?: NutritionalInfo;
+  ingredients?: string[];
+  prepTime?: string;
 }
 
 export interface CartItem extends MenuItem {

@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { ShoppingCart, Plus, Minus, AlertCircle, Leaf, Sparkles, X } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { RestaurantLogo } from './RestaurantLogo';
+import { DishDetailsDialog } from './DishDetailsDialog';
 
 interface MenuScreenProps {
   onAddToCart: (item: MenuItem) => void;
@@ -23,6 +24,8 @@ interface MenuScreenProps {
 export function MenuScreen({ onAddToCart, cartItemCount, cartTotal, onViewCart, onOpenAI, cart = [], onUpdateQuantity, onRemoveItem }: MenuScreenProps) {
   const [activeCategory, setActiveCategory] = useState<string>('starter');
   const [showAIBanner, setShowAIBanner] = useState(true);
+  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
+  const [dishDialogOpen, setDishDialogOpen] = useState(false);
 
   const getItemQuantity = (itemId: string) => {
     const cartItem = cart.find(item => item.id === itemId);
@@ -155,7 +158,11 @@ export function MenuScreen({ onAddToCart, cartItemCount, cartTotal, onViewCart, 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-2xl shadow-sm overflow-hidden border border-[#C4941D]/10"
+            className="bg-white rounded-2xl shadow-sm overflow-hidden border border-[#C4941D]/10 cursor-pointer active:scale-[0.98] transition-transform"
+            onClick={() => {
+              setSelectedDish(item);
+              setDishDialogOpen(true);
+            }}
           >
             <div className="flex gap-4 p-4">
               {/* Image */}
@@ -175,7 +182,9 @@ export function MenuScreen({ onAddToCart, cartItemCount, cartTotal, onViewCart, 
               {/* Details */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="text-[#3E2723] line-clamp-1">{item.name}</h3>
+                  <h3 className="text-[#3E2723] line-clamp-1">
+                    {item.name}
+                  </h3>
                   <div className="text-[#C4941D] shrink-0">
                     ${item.price.toFixed(2)}
                   </div>
@@ -203,7 +212,10 @@ export function MenuScreen({ onAddToCart, cartItemCount, cartTotal, onViewCart, 
                 {/* Add Button or Quantity Selector */}
                 {getItemQuantity(item.id) === 0 ? (
                   <Button
-                    onClick={() => onAddToCart(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddToCart(item);
+                    }}
                     size="sm"
                     className="w-full bg-[#C4941D] text-white rounded-lg h-9"
                   >
@@ -211,7 +223,10 @@ export function MenuScreen({ onAddToCart, cartItemCount, cartTotal, onViewCart, 
                     Add to Cart
                   </Button>
                 ) : (
-                  <div className="flex items-center justify-center gap-3 h-9">
+                  <div 
+                    className="flex items-center justify-center gap-3 h-9"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       onClick={() => handleDecrement(item.id)}
                       className="w-9 h-9 rounded-full border-2 border-[#C4941D] bg-white text-[#C4941D] flex items-center justify-center active:scale-95 transition-transform"
@@ -277,6 +292,13 @@ export function MenuScreen({ onAddToCart, cartItemCount, cartTotal, onViewCart, 
           <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#6B8E23] rounded-full border-2 border-white animate-pulse" />
         </motion.button>
       </motion.div>
+
+      {/* Dish Details Dialog */}
+      <DishDetailsDialog
+        dish={selectedDish}
+        open={dishDialogOpen}
+        onOpenChange={setDishDialogOpen}
+      />
     </div>
   );
 }

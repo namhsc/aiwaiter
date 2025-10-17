@@ -21,9 +21,9 @@ export const generateAIResponse = (
     const mains = menuData.filter(i => i.category === 'main').slice(0, 2);
     return {
       text: "Our menu showcases the finest culinary artistry! ✨\n\n🥨 **Starters**\n" + 
-            starters.map(i => `• ${i.name} - €${i.price.toFixed(2)}`).join('\n') + 
+            starters.map(i => `• ${i.name} - ${i.price.toFixed(2)}`).join('\n') + 
             "\n\n🍖 **Main Courses**\n" + 
-            mains.map(i => `• ${i.name} - €${i.price.toFixed(2)}`).join('\n') + 
+            mains.map(i => `• ${i.name} - ${i.price.toFixed(2)}`).join('\n') + 
             "\n\nWould you like to see our desserts or drinks? Or shall I recommend something special?",
       suggestedItems: [...starters, ...mains]
     };
@@ -34,9 +34,9 @@ export const generateAIResponse = (
     const popularItems = menuData.filter(item => item.popular);
     return {
       text: "Ah, excellent choice asking for recommendations! 🌟\n\n**Today's Exceptional Selections:**\n\n" +
-            "🥩 **Wiener Schnitzel** (€18.90)\nOur signature dish! Perfectly crispy veal cutlet with potato salad and lingonberry jam.\n\n" +
-            "🥘 **Rinderrouladen** (€22.90)\nTender beef rolls in rich gravy - a true German classic.\n\n" +
-            "🍰 **Black Forest Cake** (€8.50)\nDivine chocolate layers with cherries - don't leave without trying this!\n\n" +
+            "🥩 **Wiener Schnitzel** ($18.90)\nOur signature dish! Perfectly crispy veal cutlet with potato salad and lingonberry jam.\n\n" +
+            "🥘 **Rinderrouladen** ($22.90)\nTender beef rolls in rich gravy - a true German classic.\n\n" +
+            "🍰 **Black Forest Cake** ($8.50)\nDivine chocolate layers with cherries - don't leave without trying this!\n\n" +
             "These pair beautifully with our Bavarian Wheat Beer or Riesling Wine. Shall I add any of these to your order?",
       suggestedItems: popularItems
     };
@@ -47,7 +47,7 @@ export const generateAIResponse = (
     const schnitzel = menuData.find(item => item.name.includes('Schnitzel'));
     if (schnitzel) {
       return {
-        text: `Ah, the **Wiener Schnitzel** - excellent choice! 🥩✨\n\n${schnitzel.description}\n\n**Price:** €${schnitzel.price.toFixed(2)}\n**Perfect pairing:** I recommend our Riesling Wine to complement the delicate flavors.\n\n*Fun fact:* Our chef uses a traditional Viennese recipe passed down through generations. The secret is in the gentle pounding and precise breading technique!\n\nShall I add this masterpiece to your order?`,
+        text: `Ah, the **Wiener Schnitzel** - excellent choice! 🥩✨\n\n${schnitzel.description}\n\n**Price:** ${schnitzel.price.toFixed(2)}\n**Perfect pairing:** I recommend our Riesling Wine to complement the delicate flavors.\n\n*Fun fact:* Our chef uses a traditional Viennese recipe passed down through generations. The secret is in the gentle pounding and precise breading technique!\n\nShall I add this masterpiece to your order?`,
         suggestedItems: [schnitzel]
       };
     }
@@ -58,7 +58,7 @@ export const generateAIResponse = (
     const bratwurst = menuData.find(item => item.name.includes('Bratwurst'));
     if (bratwurst) {
       return {
-        text: `The **Bratwurst Platter** - a true German tradition! 🌭\n\n${bratwurst.description}\n\n**Price:** €${bratwurst.price.toFixed(2)}\n**My pairing suggestion:** Our Bavarian Wheat Beer creates a perfect harmony.\n\nThese Nuremberg sausages are grilled to perfection with a beautiful char. Shall I prepare this for you?`,
+        text: `The **Bratwurst Platter** - a true German tradition! 🌭\n\n${bratwurst.description}\n\n**Price:** ${bratwurst.price.toFixed(2)}\n**My pairing suggestion:** Our Bavarian Wheat Beer creates a perfect harmony.\n\nThese Nuremberg sausages are grilled to perfection with a beautiful char. Shall I prepare this for you?`,
         suggestedItems: [bratwurst]
       };
     }
@@ -70,7 +70,7 @@ export const generateAIResponse = (
     return {
       text: "Wonderful! We have exquisite vegetarian options: 🌱\n\n" +
             veggieItems.map(item => 
-              `**${item.name}** (€${item.price.toFixed(2)})\n${item.description}`
+              `**${item.name}** (${item.price.toFixed(2)})\n${item.description}`
             ).join('\n\n') +
             "\n\nAll prepared with the same Michelin-inspired care as our other dishes. Which one tempts you?",
       suggestedItems: veggieItems
@@ -94,7 +94,7 @@ export const generateAIResponse = (
       return {
         text: `I appreciate you letting me know about your dietary needs! 🏥\n\n**${allergenType.toUpperCase()}-FREE OPTIONS:**\n\n` +
               safeItems.slice(0, 4).map(item => 
-                `• ${item.name} (€${item.price.toFixed(2)}) - ${item.allergens.length > 0 ? 'Contains: ' + item.allergens.join(', ') : 'No major allergens'}`
+                `• ${item.name} (${item.price.toFixed(2)}) - ${item.allergens.length > 0 ? 'Contains: ' + item.allergens.join(', ') : 'No major allergens'}`
               ).join('\n') +
               `\n\nOur kitchen takes allergies very seriously. Would you like detailed allergen information for any specific dish?`,
         suggestedItems: safeItems.slice(0, 4)
@@ -113,9 +113,9 @@ export const generateAIResponse = (
       };
     }
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const itemsList = cart.map(item => `• ${item.name} ×${item.quantity} (€${(item.price * item.quantity).toFixed(2)})`).join('\n');
+    const itemsList = cart.map(item => `• ${item.name} ×${item.quantity} (${(item.price * item.quantity).toFixed(2)})`).join('\n');
     return {
-      text: `Here's your current order: 📋\n\n${itemsList}\n\n**Subtotal:** €${total.toFixed(2)}\n\nWould you like to:\n• Add more items\n• Modify quantities\n• Proceed to checkout\n• Get pairing suggestions`,
+      text: `Here's your current order: 📋\n\n${itemsList}\n\n**Subtotal:** ${total.toFixed(2)}\n\nWould you like to:\n• Add more items\n• Modify quantities\n• Proceed to checkout\n• Get pairing suggestions`,
     };
   }
   
@@ -125,7 +125,7 @@ export const generateAIResponse = (
     return {
       text: "Ah, an excellent inquiry! Our beverage selection is curated to perfection: 🍷\n\n" +
             drinks.map(item => 
-              `**${item.name}** (€${item.price.toFixed(2)})\n${item.description}${item.popular ? ' ⭐ Guest favorite!' : ''}`
+              `**${item.name}** (${item.price.toFixed(2)})\n${item.description}${item.popular ? ' ⭐ Guest favorite!' : ''}`
             ).join('\n\n') +
             "\n\nWhat type of pairing are you seeking? I can suggest the perfect complement to your meal!",
       suggestedItems: drinks
@@ -138,7 +138,7 @@ export const generateAIResponse = (
     return {
       text: "Our desserts are truly spectacular! 🍰✨\n\n" +
             desserts.map(item => 
-              `**${item.name}** (€${item.price.toFixed(2)})\n${item.description}${item.popular ? ' ⭐ Highly recommended!' : ''}`
+              `**${item.name}** (${item.price.toFixed(2)})\n${item.description}${item.popular ? ' ⭐ Highly recommended!' : ''}`
             ).join('\n\n') +
             "\n\n*Chef's Note:* Don't miss our signature **Le Chef's Golden Soufflé** - prepared tableside with 24-karat gold dust!\n\nWhich sweet ending shall we prepare for you?",
       suggestedItems: desserts
@@ -151,7 +151,7 @@ export const generateAIResponse = (
     return {
       text: "Let's begin your journey with our refined starters! 🥨\n\n" +
             starters.map(item => 
-              `**${item.name}** (€${item.price.toFixed(2)})\n${item.description}`
+              `**${item.name}** (${item.price.toFixed(2)})\n${item.description}`
             ).join('\n\n') +
             "\n\nEach starter is designed to awaken your palate. What catches your eye?",
       suggestedItems: starters
@@ -162,10 +162,10 @@ export const generateAIResponse = (
   if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('how much') || lowerMessage.includes('expensive')) {
     return {
       text: "Our pricing reflects the quality and artistry of each dish: 💰\n\n" +
-            "🥨 **Starters:** €6.90 - €9.50\n" +
-            "🍖 **Main Courses:** €14.50 - €22.90\n" +
-            "🍰 **Desserts:** €7.90 - €9.50\n" +
-            "🍺 **Beverages:** €3.90 - €6.50\n\n" +
+            "🥨 **Starters:** $6.90 - $9.50\n" +
+            "🍖 **Main Courses:** $14.50 - $22.90\n" +
+            "🍰 **Desserts:** $7.90 - $9.50\n" +
+            "🍺 **Beverages:** $3.90 - $6.50\n\n" +
             "Every dish is prepared with Michelin-inspired standards. Which price range interests you?",
     };
   }
@@ -183,7 +183,7 @@ export const generateAIResponse = (
     if (foundItems.length > 0) {
       const item = foundItems[0];
       return {
-        text: `Perfect choice! I'll add **${item.name}** to your order. ✨\n\n${item.description}\n\n**Price:** €${item.price.toFixed(2)}\n\nWould you like me to suggest a perfect pairing? Or shall we continue exploring the menu?`,
+        text: `Perfect choice! I'll add **${item.name}** to your order. ✨\n\n${item.description}\n\n**Price:** ${item.price.toFixed(2)}\n\nWould you like me to suggest a perfect pairing? Or shall we continue exploring the menu?`,
         suggestedItems: foundItems
       };
     }

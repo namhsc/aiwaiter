@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'motion/react';
-import { CreditCard, Banknote, QrCode, CheckCircle2, Lock } from 'lucide-react';
+import { CreditCard, Banknote, QrCode, CheckCircle2, Lock, Plus } from 'lucide-react';
 
 interface PaymentScreenProps {
   total: number;
   onComplete: () => void;
+  onOpenAI?: () => void;
+  onAddMoreItems?: () => void;
 }
 
-export function PaymentScreen({ total, onComplete }: PaymentScreenProps) {
+export function PaymentScreen({ total, onComplete, onOpenAI, onAddMoreItems }: PaymentScreenProps) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -206,6 +208,47 @@ export function PaymentScreen({ total, onComplete }: PaymentScreenProps) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Only show floating buttons before payment is complete */}
+      {!isComplete && (
+        <>
+          {/* Floating AI Button */}
+          {onOpenAI && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="fixed bottom-6 right-6 z-30"
+            >
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={onOpenAI}
+                className="w-16 h-16 bg-[#C4941D] text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white"
+              >
+                <div className="text-2xl">🤵</div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#6B8E23] rounded-full border-2 border-white animate-pulse" />
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* Add More Items Button */}
+          {onAddMoreItems && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="fixed bottom-6 left-6 z-30"
+            >
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={onAddMoreItems}
+                className="w-16 h-16 bg-white text-[#C4941D] rounded-full shadow-2xl flex items-center justify-center border-4 border-[#C4941D]"
+                title="Add more items"
+              >
+                <Plus className="w-8 h-8" />
+              </motion.button>
+            </motion.div>
+          )}
+        </>
+      )}
     </div>
   );
 }
