@@ -34,3 +34,24 @@ export interface ChatMessage {
   sender: 'user' | 'ai';
   timestamp: Date;
 }
+
+export type DiscountType = 'percentage' | 'fixed' | 'free-item';
+
+export interface Voucher {
+  code: string;
+  description: string;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscount?: number;
+  validUntil?: Date;
+  applicable?: 'all' | 'food' | 'drinks' | 'specific';
+  specificItems?: string[];
+  freeItemId?: string;
+  isActive: boolean;
+}
+
+export interface AppliedDiscount {
+  voucher: Voucher;
+  discountAmount: number;
+}

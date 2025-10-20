@@ -124,20 +124,26 @@ export function LandingScreen({ language, tableNumber, onLanguageChange, onEnter
             </div>
           </motion.div>
 
-          {/* Meet AI Waiter */}
+          {/* AI Feature Highlight - Clickable */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
             onClick={onOpenAI}
-            className="bg-[#FFF4E0] rounded-2xl p-5 border border-[#C4941D]/30 cursor-pointer active:scale-[0.98] transition-transform"
+            className="bg-gradient-to-br from-[#FFF4E0] to-[#FFF9F0] rounded-2xl p-5 border-2 border-[#C4941D]/30 shadow-sm cursor-pointer active:scale-[0.98] transition-transform hover:shadow-md"
           >
             <div className="flex gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#C4941D] flex items-center justify-center shrink-0 text-xl">
-                🤵
+              <div className="relative">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#C4941D] to-[#D4A52D] flex items-center justify-center shrink-0 text-2xl shadow-md">
+                  🤵
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse" />
               </div>
               <div className="flex-1">
-                <h3 className="text-[#3E2723] mb-1">{t.meetAI}</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-[#3E2723]">{t.meetAI}</h3>
+                  <span className="bg-[#C4941D] text-white text-[10px] px-2 py-0.5 rounded-full">AI</span>
+                </div>
                 <p className="text-sm text-[#8B7355] leading-relaxed">
                   {t.aiDescription}
                 </p>
@@ -161,13 +167,27 @@ export function LandingScreen({ language, tableNumber, onLanguageChange, onEnter
             </Select>
           </div>
 
-          {/* Begin Button */}
-          <Button 
-            onClick={onEnter}
-            className="w-full h-14 rounded-xl bg-[#C4941D] text-white shadow-md"
-          >
-            {t.begin}
-          </Button>
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            {/* Primary: Start AI Chat */}
+            <Button 
+              onClick={onOpenAI}
+              className="w-full h-14 rounded-xl bg-gradient-to-r from-[#C4941D] to-[#D4A52D] text-white shadow-lg hover:shadow-xl transition-shadow"
+            >
+              <MessageCircle className="w-5 h-5 mr-2" />
+              Start AI Chat
+              <Sparkles className="w-4 h-4 ml-2" />
+            </Button>
+            
+            {/* Secondary: Browse Traditional Menu */}
+            <Button 
+              onClick={onEnter}
+              variant="outline"
+              className="w-full h-12 rounded-xl border-2 border-[#C4941D]/30 text-[#3E2723] hover:bg-[#C4941D]/5"
+            >
+              Browse Traditional Menu
+            </Button>
+          </div>
 
           {/* Feature Icons */}
           <div className="flex justify-center gap-8 py-4">

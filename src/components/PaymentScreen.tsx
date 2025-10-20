@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'motion/react';
-import { CreditCard, Banknote, QrCode, CheckCircle2, Lock, Plus } from 'lucide-react';
+import { CreditCard, Banknote, QrCode, CheckCircle2, Lock, Plus, Sparkles } from 'lucide-react';
+import { Voucher } from '../types/menu';
 
 interface PaymentScreenProps {
+  subtotal: number;
+  discount: number;
   total: number;
   onComplete: () => void;
   onOpenAI?: () => void;
   onAddMoreItems?: () => void;
+  appliedVoucher: Voucher | null;
 }
 
-export function PaymentScreen({ total, onComplete, onOpenAI, onAddMoreItems }: PaymentScreenProps) {
+export function PaymentScreen({ subtotal, discount, total, onComplete, onOpenAI, onAddMoreItems, appliedVoucher }: PaymentScreenProps) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -57,12 +61,64 @@ export function PaymentScreen({ total, onComplete, onOpenAI, onAddMoreItems }: P
               </div>
 
               <div className="px-4 space-y-6">
-                {/* Total Amount Card */}
-                <div className="bg-white rounded-2xl border-2 border-[#C4941D] p-6 text-center shadow-sm">
-                  <div className="text-[#C4941D] text-sm mb-2">Total Amount</div>
-                  <div className="text-[#C4941D] text-4xl">
-                    ${total.toFixed(2)}
-                  </div>
+                {/* Total Amount Card with Discount Display */}
+                <div className="bg-white rounded-2xl border-2 border-[#C4941D] p-6 shadow-sm">
+                  {discount > 0 && appliedVoucher ? (
+                    <div className="space-y-3">
+                      {/* Discount Badge */}
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-[#C4941D]" />
+                        <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                          {appliedVoucher.code} Applied
+                        </span>
+                      </div>
+
+                      {/* Original Price with Strikethrough */}
+                      <div className="text-center">
+                        <div className="text-[#8B7355] text-sm mb-1">Original Total</div>
+                        <div className="text-gray-400 line-through text-2xl">
+                          €{(subtotal * 1.19).toFixed(2)}
+                        </div>
+                      </div>
+
+                      {/* Discount Amount */}
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-green-600 text-sm">Discount:</span>
+                          <span className="text-green-700 text-lg">
+                            {appliedVoucher.discountType === 'percentage' 
+                              ? `-${appliedVoucher.discountValue}%` 
+                              : `-€${discount.toFixed(2)}`}
+                          </span>
+                        </div>
+                        {appliedVoucher.discountType === 'percentage' && (
+                          <div className="text-center text-green-600 text-xs mt-1">
+                            Save €{discount.toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Final Discounted Price - Highlighted */}
+                      <div className="text-center pt-2 border-t border-[#C4941D]/20">
+                        <div className="text-[#C4941D] text-sm mb-1">You Pay</div>
+                        <div className="text-[#C4941D] text-4xl">
+                          €{total.toFixed(2)}
+                        </div>
+                        <div className="mt-2 bg-green-100 border border-green-200 rounded-lg py-1.5 px-3 inline-block">
+                          <span className="text-green-700 text-xs">
+                            🎉 You saved €{discount.toFixed(2)}!
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="text-[#C4941D] text-sm mb-2">Total Amount</div>
+                      <div className="text-[#C4941D] text-4xl">
+                        €{total.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Payment Methods */}

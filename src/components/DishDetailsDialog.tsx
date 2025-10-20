@@ -1,18 +1,54 @@
+import { useState, useEffect } from 'react';
 import { MenuItem } from '../types/menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Clock, Leaf, AlertCircle } from 'lucide-react';
+import { Clock, Leaf, AlertCircle, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { toast } from 'sonner@2.0.3';
 
 interface DishDetailsDialogProps {
   dish: MenuItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAddToCart?: (item: MenuItem, quantity: number) => void;
+  cartQuantity?: number;
 }
 
-export function DishDetailsDialog({ dish, open, onOpenChange }: DishDetailsDialogProps) {
+export function DishDetailsDialog({ dish, open, onOpenChange, onAddToCart, cartQuantity = 0 }: DishDetailsDialogProps) {
+  const [quantity, setQuantity] = useState(1);
+
+  // Reset quantity when dialog opens or dish changes
+  useEffect(() => {
+    if (open && dish) {
+      setQuantity(1);
+    }
+  }, [open, dish]);
+
   if (!dish) return null;
+
+  const handleAddToCart = () => {
+    if (onAddToCart && quantity > 0) {
+      for (let i = 0; i < quantity; i++) {
+        onAddToCart(dish, 1);
+      }
+      
+      const newTotalQuantity = cartQuantity + quantity;
+      
+      toast.success('✅ Added to cart successfully!', {
+        description: `${dish.name} × ${newTotalQuantity} now in cart · €${(dish.price * newTotalQuantity).toFixed(2)}`,
+        duration: 3000,
+      });
+      
+      // Automatically close the dialog after adding to cart
+      setQuantity(1);
+      onOpenChange(false);
+    }
+  };
+
+  const incrementQuantity = () => setQuantity(prev => prev + 1);
+  const decrementQuantity = () => setQuantity(prev => Math.max(1, prev - 1));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -151,12 +187,75 @@ export function DishDetailsDialog({ dish, open, onOpenChange }: DishDetailsDialo
           </div>
         )}
 
-        {/* Price */}
-        <div className="flex justify-between items-center pt-2">
-          <span className="text-[#8B7355]">Price</span>
-          <span className="text-2xl text-[#C4941D]">
-            ${dish.price.toFixed(2)}
-          </span>
+        <Separator className="bg-[#C4941D]/20" />
+
+        {/* Price & Add to Cart Section */}
+        <div className="space-y-4 sticky bottom-0 bg-[#FFF9F0] pt-4 -mb-2">
+          {/* Price Display */}
+          <div className="bg-white rounded-xl p-4 border-2 border-[#C4941D]/30">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[#8B7355]">Price per item</span>
+              <span className="text-2xl text-[#C4941D]">
+                €{dish.price.toFixed(2)}
+              </span>
+            </div>
+
+            {/* Quantity Selector */}
+            <div className="flex items-center justify-between bg-[#FFF4E0] rounded-lg p-3">
+              <span className="text-[#3E2723]">Quantity</span>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={decrementQuantity}
+                  size="icon"
+                  variant="outline"
+                  className="w-8 h-8 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D] hover:text-white"
+                >
+                  <Minus className="w-4 h-4" />
+                </Button>
+                <div className="w-12 text-center text-[#3E2723] text-lg">
+                  {quantity}
+                </div>
+                <Button
+                  onClick={incrementQuantity}
+                  size="icon"
+                  variant="outline"
+                  className="w-8 h-8 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D] hover:text-white"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Total Price */}
+            {quantity > 1 && (
+              <div className="flex justify-between items-center mt-3 pt-3 border-t border-[#C4941D]/20">
+                <span className="text-[#8B7355] text-sm">Total for {quantity} items</span>
+                <span className="text-xl text-[#C4941D]">
+                  €{(dish.price * quantity).toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Already in Cart Notice */}
+          {cartQuantity > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+              <p className="text-xs text-blue-700">
+                📦 Already in cart: {cartQuantity} item{cartQuantity > 1 ? 's' : ''}
+              </p>
+            </div>
+          )}
+
+          {/* Add to Cart Button */}
+          {onAddToCart && (
+            <Button
+              onClick={handleAddToCart}
+              className="w-full h-12 bg-[#C4941D] hover:bg-[#B38818] text-white rounded-xl shadow-lg"
+            >
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              Add {quantity} to Cart · €{(dish.price * quantity).toFixed(2)}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
