@@ -131,7 +131,7 @@ export function RestaurantStory({
 			intro:
 				'Founded in 2024, Lumière Dorée represents the perfect harmony between time-honored culinary traditions and cutting-edge innovation.',
 			paragraph2:
-				"Our name, meaning 'Golden Light' in French, symbolizes the enlightenment we bring to modern dining. Each visit offers every guest experience is illuminated by both the artistry of our chefs and the intelligence of our AI Waiter.",
+				"Our name, meaning 'Golden Light' in French, symbolizes the enlightenment we bring to modern dining. Each visit offers every guest experience is illuminated by both the artistry of our chefs and the intelligence of our AI sommelier.",
 			visionTitle: "Chef Marie Laurent's vision was simple yet revolutionary:",
 			vision:
 				'create an intimate fine dining experience where technology enhances rather than replaces the human touch. Our AI Waiter Assistant learns your preferences, suggests perfect pairings, and ensures every visit feels personally curated.',
@@ -184,7 +184,7 @@ export function RestaurantStory({
 			intro:
 				'Gegründet im Jahr 2024, repräsentiert Lumière Dorée die perfekte Harmonie zwischen zeitlosen kulinarischen Traditionen und modernster Innovation.',
 			paragraph2:
-				"Unser Name, der auf Französisch 'Goldenes Licht' bedeutet, symbolisiert die Erleuchtung, die wir in die moderne Gastronomie bringen. Jeder Besuch bietet jedem Gast ein Erlebnis, das sowohl von der Kunstfertigkeit unserer Köche als auch von der Intelligenz unseres KI-Sommeliers erleuchtet wird.",
+				"Unser Name, der auf Französisch 'Goldenes Licht' bedeutet, symbolisiert die Erleuchtung, die wir in die moderne Gastronomie bringen. Jeder Besuch bietet jedem Gast ein Erlebnis, das sowohl von der Kunstfertigkeit unserer Köche als auch von der Intelligenz unseres KI-Waiters erleuchtet wird.",
 			visionTitle: 'Chef Marie Laurents Vision war einfach, aber revolutionär:',
 			vision:
 				'Ein intimes Fine-Dining-Erlebnis schaffen, bei dem Technologie die menschliche Note verbessert, anstatt sie zu ersetzen. Unser KI-Kellner-Assistent lernt Ihre Vorlieben, schlägt perfekte Paarungen vor und sorgt dafür, dass sich jeder Besuch persönlich kuratiert anfühlt.',
@@ -287,7 +287,7 @@ export function RestaurantStory({
 			intro:
 				'Được thành lập vào năm 2024, Lumière Dorée đại diện cho sự hài hòa hoàn hảo giữa truyền thống ẩm thực lâu đời và đổi mới tiên tiến.',
 			paragraph2:
-				"Tên của chúng tôi, có nghĩa là 'Ánh Sáng Vàng' trong tiếng Pháp, tượng trưng cho sự khai sáng mà chúng tôi mang đến cho ẩm thực hiện đại. Mỗi lần ghé thăm mang đến cho mọi vị khách trải nghiệm được chiếu sáng bởi cả nghệ thuật của các đầu bếp và trí tuệ của AI Waiter của chúng tôi.",
+				"Tên của chúng tôi, có nghĩa là 'Ánh Sáng Vàng' trong tiếng Pháp, tượng trưng cho sự khai sáng mà chúng tôi mang đến cho ẩm thực hiện đại. Mỗi lần ghé thăm mang đến cho mọi vị khách trải nghiệm được chiếu sáng bởi cả nghệ thuật của các đầu bếp và trí tuệ của AI sommelier của chúng tôi.",
 			visionTitle:
 				'Tầm nhìn của Đầu bếp Marie Laurent đơn giản nhưng mang tính cách mạng:',
 			vision:

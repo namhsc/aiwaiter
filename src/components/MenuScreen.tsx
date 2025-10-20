@@ -17,7 +17,6 @@ import {
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { RestaurantLogo } from './RestaurantLogo';
 import { DishDetailsDialog } from './DishDetailsDialog';
-import { toast } from 'sonner@2.0.3';
 
 interface MenuScreenProps {
 	onAddToCart: (item: MenuItem) => void;
@@ -54,19 +53,8 @@ export function MenuScreen({
 		const currentQuantity = getItemQuantity(item.id);
 		if (currentQuantity === 0) {
 			onAddToCart(item);
-			toast.success('✅ Added to cart successfully!', {
-				description: `${item.name} × 1 now in cart · €${item.price.toFixed(2)}`,
-				duration: 3000,
-			});
 		} else if (onUpdateQuantity) {
 			onUpdateQuantity(item.id, currentQuantity + 1);
-			toast.success('✅ Quantity updated!', {
-				description: `${item.name} × ${currentQuantity + 1} now in cart · €${(
-					item.price *
-					(currentQuantity + 1)
-				).toFixed(2)}`,
-				duration: 3000,
-			});
 		}
 	};
 
@@ -76,21 +64,8 @@ export function MenuScreen({
 
 		if (currentQuantity === 1 && onRemoveItem) {
 			onRemoveItem(itemId);
-			if (item) {
-				toast.info('Removed from cart', {
-					description: `${item.name} removed`,
-					duration: 2000,
-				});
-			}
 		} else if (currentQuantity > 1 && onUpdateQuantity && item) {
 			onUpdateQuantity(itemId, currentQuantity - 1);
-			toast.success('✅ Quantity updated!', {
-				description: `${item.name} × ${currentQuantity - 1} now in cart · €${(
-					item.price *
-					(currentQuantity - 1)
-				).toFixed(2)}`,
-				duration: 3000,
-			});
 		}
 	};
 
@@ -166,17 +141,6 @@ export function MenuScreen({
 									<strong>Order 2x faster</strong> with our intelligent AI
 									assistant.
 								</p>
-								<div className="flex flex-wrap gap-1 mb-3 text-xs text-[#8B7355]">
-									<span className="bg-white/80 px-2 py-0.5 rounded-full">
-										✨ Smart recommendations
-									</span>
-									<span className="bg-white/80 px-2 py-0.5 rounded-full">
-										🎯 Instant ordering
-									</span>
-									<span className="bg-white/80 px-2 py-0.5 rounded-full">
-										🍷 Wine pairings
-									</span>
-								</div>
 
 								{/* Enhanced Buttons */}
 								<div className="flex gap-2">
@@ -188,13 +152,6 @@ export function MenuScreen({
 										className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] text-white rounded-full h-10 px-6 shadow-md hover:shadow-lg transition-shadow"
 									>
 										Chat Now →
-									</Button>
-									<Button
-										onClick={() => setShowAIBanner(false)}
-										variant="ghost"
-										className="text-[#8B7355] rounded-full h-10 px-4 text-sm"
-									>
-										Continue Browsing
 									</Button>
 								</div>
 							</div>

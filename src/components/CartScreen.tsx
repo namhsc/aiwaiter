@@ -5,7 +5,6 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, Sparkles, Ticket, X, Tag } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getSuggestedVouchers } from '../data/voucherData';
-import { toast } from 'sonner@2.0.3';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,34 +55,23 @@ export function CartScreen({
 
   const handleApplyVoucher = () => {
     if (!voucherCode.trim()) {
-      toast.error('Please enter a voucher code');
       return;
     }
 
     const result = onApplyVoucher(voucherCode.trim().toUpperCase());
     
     if (result.success) {
-      toast.success(result.message);
       setVoucherCode('');
       setShowVoucherInput(false);
-    } else {
-      toast.error(result.message);
     }
   };
 
   const handleQuickApplyVoucher = (code: string) => {
-    const result = onApplyVoucher(code);
-    
-    if (result.success) {
-      toast.success(result.message);
-    } else {
-      toast.error(result.message);
-    }
+    onApplyVoucher(code);
   };
 
   const handleRemoveVoucher = () => {
     onRemoveVoucher();
-    toast.info('Voucher removed');
   };
 
   const handleConfirm = () => {

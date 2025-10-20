@@ -24,7 +24,6 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { DishDetailsDialog } from './DishDetailsDialog';
-import { toast } from 'sonner@2.0.3';
 
 interface AIWaiterChatProps {
 	onBack: () => void;
@@ -159,14 +158,6 @@ export function AIWaiterChat({
 		onAddToCart(item);
 
 		const newQuantity = currentQuantity + 1;
-
-		// Show toast notification
-		toast.success('✅ Added to cart successfully!', {
-			description: `${item.name} × ${newQuantity} now in cart · €${(
-				item.price * newQuantity
-			).toFixed(2)}`,
-			duration: 3000,
-		});
 
 		// Add confirmation message
 		const confirmMessage: ChatMessage = {

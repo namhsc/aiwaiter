@@ -6,7 +6,6 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Clock, Leaf, AlertCircle, Plus, Minus, ShoppingCart } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
 
 interface DishDetailsDialogProps {
   dish: MenuItem | null;
@@ -33,13 +32,6 @@ export function DishDetailsDialog({ dish, open, onOpenChange, onAddToCart, cartQ
       for (let i = 0; i < quantity; i++) {
         onAddToCart(dish, 1);
       }
-      
-      const newTotalQuantity = cartQuantity + quantity;
-      
-      toast.success('✅ Added to cart successfully!', {
-        description: `${dish.name} × ${newTotalQuantity} now in cart · €${(dish.price * newTotalQuantity).toFixed(2)}`,
-        duration: 3000,
-      });
       
       // Automatically close the dialog after adding to cart
       setQuantity(1);

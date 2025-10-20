@@ -12,7 +12,6 @@ import {
 	validateVoucher,
 	calculateDiscount,
 } from './data/voucherData';
-import { Toaster } from './components/ui/sonner';
 
 type Screen =
 	| 'landing'
@@ -120,7 +119,6 @@ export default function App() {
 
 	return (
 		<div className="min-h-screen">
-			<Toaster position="top-center" richColors />
 			{currentScreen === 'welcome' && (
 				<AIWelcomeScreen
 					onStartAIChat={() => setCurrentScreen('ai-chat')}
