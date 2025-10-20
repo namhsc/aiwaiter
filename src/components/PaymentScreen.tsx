@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'motion/react';
-import { CreditCard, Banknote, QrCode, CheckCircle2, Lock, Plus, Sparkles } from 'lucide-react';
+import { CreditCard, Banknote, QrCode, CheckCircle2, Lock, Sparkles } from 'lucide-react';
 import { Voucher } from '../types/menu';
 
 interface PaymentScreenProps {
@@ -10,11 +10,10 @@ interface PaymentScreenProps {
   total: number;
   onComplete: () => void;
   onOpenAI?: () => void;
-  onAddMoreItems?: () => void;
   appliedVoucher: Voucher | null;
 }
 
-export function PaymentScreen({ subtotal, discount, total, onComplete, onOpenAI, onAddMoreItems, appliedVoucher }: PaymentScreenProps) {
+export function PaymentScreen({ subtotal, discount, total, onComplete, onOpenAI, appliedVoucher }: PaymentScreenProps) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -64,56 +63,40 @@ export function PaymentScreen({ subtotal, discount, total, onComplete, onOpenAI,
                 {/* Total Amount Card with Discount Display */}
                 <div className="bg-white rounded-2xl border-2 border-[#C4941D] p-6 shadow-sm">
                   {discount > 0 && appliedVoucher ? (
-                    <div className="space-y-3">
-                      {/* Discount Badge */}
-                      <div className="flex items-center justify-center gap-2 mb-2">
+                    <div className="space-y-4">
+                      {/* Voucher Badge */}
+                      <div className="flex items-center justify-center gap-2">
                         <Sparkles className="w-4 h-4 text-[#C4941D]" />
-                        <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                          {appliedVoucher.code} Applied
+                        <span className="text-xs bg-[#C4941D]/10 text-[#C4941D] px-3 py-1 rounded-full border border-[#C4941D]/30">
+                          {appliedVoucher.code}
                         </span>
                       </div>
 
-                      {/* Original Price with Strikethrough */}
-                      <div className="text-center">
-                        <div className="text-[#8B7355] text-sm mb-1">Original Total</div>
-                        <div className="text-gray-400 line-through text-2xl">
-                          €{(subtotal * 1.19).toFixed(2)}
-                        </div>
-                      </div>
-
-                      {/* Discount Amount */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3">
-                        <div className="flex items-center justify-center gap-2">
-                          <span className="text-green-600 text-sm">Discount:</span>
-                          <span className="text-green-700 text-lg">
+                      {/* Price Comparison - Simplified */}
+                      <div className="text-center space-y-2">
+                        <div className="flex items-center justify-center gap-3">
+                          <span className="text-gray-400 line-through text-lg">
+                            €{(subtotal * 1.19).toFixed(2)}
+                          </span>
+                          <span className="text-green-600 text-sm">
                             {appliedVoucher.discountType === 'percentage' 
                               ? `-${appliedVoucher.discountValue}%` 
                               : `-€${discount.toFixed(2)}`}
                           </span>
                         </div>
-                        {appliedVoucher.discountType === 'percentage' && (
-                          <div className="text-center text-green-600 text-xs mt-1">
-                            Save €{discount.toFixed(2)}
+                        
+                        {/* Final Price */}
+                        <div className="pt-3 border-t border-[#C4941D]/20">
+                          <div className="text-[#8B7355] text-xs mb-1">Total Amount</div>
+                          <div className="text-[#C4941D] text-4xl">
+                            €{total.toFixed(2)}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Final Discounted Price - Highlighted */}
-                      <div className="text-center pt-2 border-t border-[#C4941D]/20">
-                        <div className="text-[#C4941D] text-sm mb-1">You Pay</div>
-                        <div className="text-[#C4941D] text-4xl">
-                          €{total.toFixed(2)}
-                        </div>
-                        <div className="mt-2 bg-green-100 border border-green-200 rounded-lg py-1.5 px-3 inline-block">
-                          <span className="text-green-700 text-xs">
-                            🎉 You saved €{discount.toFixed(2)}!
-                          </span>
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="text-center">
-                      <div className="text-[#C4941D] text-sm mb-2">Total Amount</div>
+                      <div className="text-[#8B7355] text-xs mb-2">Total Amount</div>
                       <div className="text-[#C4941D] text-4xl">
                         €{total.toFixed(2)}
                       </div>
@@ -265,45 +248,22 @@ export function PaymentScreen({ subtotal, discount, total, onComplete, onOpenAI,
         </AnimatePresence>
       </div>
 
-      {/* Only show floating buttons before payment is complete */}
-      {!isComplete && (
-        <>
-          {/* Floating AI Button */}
-          {onOpenAI && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="fixed bottom-6 right-6 z-30"
-            >
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={onOpenAI}
-                className="w-16 h-16 bg-[#C4941D] text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white"
-              >
-                <div className="text-2xl">🤵</div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#6B8E23] rounded-full border-2 border-white animate-pulse" />
-              </motion.button>
-            </motion.div>
-          )}
-
-          {/* Add More Items Button */}
-          {onAddMoreItems && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="fixed bottom-6 left-6 z-30"
-            >
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={onAddMoreItems}
-                className="w-16 h-16 bg-white text-[#C4941D] rounded-full shadow-2xl flex items-center justify-center border-4 border-[#C4941D]"
-                title="Add more items"
-              >
-                <Plus className="w-8 h-8" />
-              </motion.button>
-            </motion.div>
-          )}
-        </>
+      {/* Only show floating AI button before payment is complete */}
+      {!isComplete && onOpenAI && (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="fixed bottom-6 right-6 z-30"
+        >
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onOpenAI}
+            className="w-16 h-16 bg-[#C4941D] text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white"
+          >
+            <div className="text-2xl">🤵</div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#6B8E23] rounded-full border-2 border-white animate-pulse" />
+          </motion.button>
+        </motion.div>
       )}
     </div>
   );

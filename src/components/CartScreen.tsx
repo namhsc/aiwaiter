@@ -394,22 +394,6 @@ export function CartScreen({
           </motion.button>
         </motion.div>
       )}
-
-      {/* Add More Items Button */}
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        className="fixed bottom-24 left-6 z-30"
-      >
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={onBack}
-          className="w-16 h-16 bg-white text-[#C4941D] rounded-full shadow-2xl flex items-center justify-center border-4 border-[#C4941D]"
-          title="Add more items"
-        >
-          <Plus className="w-8 h-8" />
-        </motion.button>
-      </motion.div>
     </div>
   );
 }
