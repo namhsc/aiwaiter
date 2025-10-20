@@ -242,11 +242,27 @@ export function LandingScreen({ language, tableNumber, onEnter, onOpenAI }: Land
             </div>
           </motion.div>
 
+          {/* Action Button */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Button 
+              onClick={onOpenAI}
+              className="w-full h-14 rounded-xl bg-gradient-to-r from-[#C4941D] to-[#D4A52D] text-white shadow-lg hover:shadow-xl transition-shadow"
+            >
+              <Sparkles className="w-5 h-5 mr-2" />
+              {t.begin}
+              <Sparkles className="w-4 h-4 ml-2" />
+            </Button>
+          </motion.div>
+
           {/* AI Feature Highlight - Clickable */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
             onClick={onOpenAI}
             className="bg-gradient-to-br from-[#FFF4E0] to-[#FFF9F0] rounded-2xl p-5 border-2 border-[#C4941D]/30 shadow-sm cursor-pointer active:scale-[0.98] transition-transform hover:shadow-md"
           >
@@ -268,16 +284,6 @@ export function LandingScreen({ language, tableNumber, onEnter, onOpenAI }: Land
               </div>
             </div>
           </motion.div>
-
-          {/* Action Button */}
-          <Button 
-            onClick={onOpenAI}
-            className="w-full h-14 rounded-xl bg-gradient-to-r from-[#C4941D] to-[#D4A52D] text-white shadow-lg hover:shadow-xl transition-shadow"
-          >
-            <Sparkles className="w-5 h-5 mr-2" />
-            {t.begin}
-            <Sparkles className="w-4 h-4 ml-2" />
-          </Button>
         </div>
       </motion.div>
     </div>
