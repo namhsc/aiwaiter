@@ -31,12 +31,16 @@ import {
   Info,
   StickyNote,
   ChevronDown,
+  Users,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { DishDetailsDialog } from "./DishDetailsDialog";
 import { RestaurantLogo } from "./RestaurantLogo";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
+import { PaymentMethodSelector } from "./PaymentMethodSelector";
 
 interface AIWaiterChatProps {
   onBack: () => void;
@@ -45,6 +49,8 @@ interface AIWaiterChatProps {
   onViewCart: () => void;
   openedFrom?: "landing" | "cart";
   tableNumber?: string;
+  guestData: { adults: number; children: number; senior: number } | null;
+  onOpenGuestDialog?: () => void;
 }
 
 export function AIWaiterChat({
@@ -54,11 +60,22 @@ export function AIWaiterChat({
   onViewCart,
   openedFrom = "landing",
   tableNumber,
+  guestData,
+  onOpenGuestDialog,
 }: AIWaiterChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      text: `Good evening! 🌟 Welcome to **Lumière Dorée**. I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
+  // Generate welcome message with guest information
+  const getWelcomeMessage = () => {
+    if (guestData) {
+      const totalGuests = guestData.adults + guestData.children + guestData.senior;
+      const guestBreakdown = [
+        guestData.adults > 0 ? `${guestData.adults} adult${guestData.adults > 1 ? 's' : ''}` : null,
+        guestData.children > 0 ? `${guestData.children} child${guestData.children > 1 ? 'ren' : ''}` : null,
+        guestData.senior > 0 ? `${guestData.senior} senior${guestData.senior > 1 ? 's' : ''}` : null,
+      ].filter(Boolean).join(', ');
+
+      return `Good evening! 🌟 Welcome to **Lumière Dorée**${tableNumber ? `, Table #${tableNumber}` : ''}. I see we have **${totalGuests} guest${totalGuests > 1 ? 's' : ''}** today (${guestBreakdown}) - wonderful!
+
+I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
 
 ✨ **I can instantly help you:**
 • 🍽️ Order in seconds - just say "I want the Schnitzel"
@@ -67,7 +84,27 @@ export function AIWaiterChat({
 • 🍷 Suggest perfect wine pairings
 • 💬 Answer any questions about our menu
 
-What sounds delightful to you today?`,
+What sounds delightful to you today?`;
+    }
+
+    return `Good evening! 🌟 Welcome to **Lumière Dorée**${tableNumber ? `, Table #${tableNumber}` : ''}.
+
+I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
+
+✨ **I can instantly help you:**
+• 🍽️ Order in seconds - just say "I want the Schnitzel"
+• 🎯 Get personalized recommendations
+• 🌱 Filter by dietary needs & allergies
+• 🍷 Suggest perfect wine pairings
+• 💬 Answer any questions about our menu
+
+What sounds delightful to you today?`;
+  };
+
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: "1",
+      text: getWelcomeMessage(),
       sender: "ai",
       timestamp: new Date(),
     },
@@ -92,6 +129,7 @@ What sounds delightful to you today?`,
   const [inputHighlight, setInputHighlight] = useState(false);
   const [showQuickActions, setShowQuickActions] =
     useState(true);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
@@ -102,6 +140,20 @@ What sounds delightful to you today?`,
     setUsedActions(new Set());
     setShowQuickActions(true);
   }, [openedFrom]);
+
+  // Update welcome message when guest data is confirmed
+  useEffect(() => {
+    if (guestData && messages.length === 1) {
+      setMessages([
+        {
+          id: "1",
+          text: getWelcomeMessage(),
+          sender: "ai",
+          timestamp: new Date(),
+        },
+      ]);
+    }
+  }, [guestData]);
 
   // Get context based on cart state
   const getContext = ():
@@ -281,6 +333,22 @@ What sounds delightful to you today?`,
     reply: string,
     buttonElement: HTMLElement,
   ) => {
+
+    // Special handling for "Checkout" or "Bill" action - open payment dialog instead
+    if (reply.toLowerCase() === 'checkout' || reply.toLowerCase() === 'bill') {
+      if (cart.length === 0) {
+        // If cart is empty, send regular message
+        const expandedPhrase = expandQuickAction(reply);
+        handleSendMessage(expandedPhrase);
+        setUsedActions((prev) => new Set([...prev, reply]));
+      } else {
+        // If cart has items, open payment dialog
+        setPaymentDialogOpen(true);
+        // Don't mark as used - user can open it multiple times
+      }
+      return;
+    }
+
     // Expand the quick action keyword into a full polite phrase
     const expandedPhrase = expandQuickAction(reply);
 
@@ -347,6 +415,25 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
     }, 500);
   };
 
+  const handlePaymentMethodConfirm = (method: { id: string; name: string }) => {
+    // Close the dialog
+    setPaymentDialogOpen(false);
+
+    // Calculate total
+    const total = cart.reduce(
+      (sum: number, item: any) => sum + item.price * item.quantity,
+      0,
+    );
+    const tax = total * 0.19;
+    const grandTotal = total + tax;
+
+    // Create a natural language message
+    const paymentMessage = `I would like to pay €${grandTotal.toFixed(2)} using ${method.name}`;
+
+    // Send the message automatically
+    handleSendMessage(paymentMessage);
+  };
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-[#FFF9F0] via-[#FFF9F0] to-[#FFF4E0] flex justify-center z-50">
       {/* Mobile-First Container with Max Width */}
@@ -378,24 +465,25 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
         </div>
 
         <div className="flex items-center gap-2">
-          {tableNumber && (
-            <div className="bg-[#4A3428] text-white px-3 py-1.5 rounded-lg shadow-md">
-              <span className="text-xs text-[#D4AF37]">
-                Table
+          {guestData && (
+            <button
+              onClick={onOpenGuestDialog}
+              className="flex items-center gap-1.5 bg-[#4A3428] text-white px-2.5 py-1.5 rounded-lg shadow-md hover:bg-[#5A4438] active:scale-95 transition-all"
+            >
+              <Users className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span className="text-xs font-semibold">
+                {guestData.adults + guestData.children + guestData.senior}
               </span>
-              <span className="ml-1.5 font-semibold">
-                #{tableNumber}
-              </span>
-            </div>
+            </button>
           )}
 
           {cart.length > 0 && (
             <button
               onClick={onViewCart}
-              className="flex items-center gap-2 bg-white text-[#C4941D] px-4 py-2 rounded-full shadow-md active:scale-95 transition-transform"
+              className="flex items-center gap-1.5 bg-white text-[#C4941D] px-2.5 py-1.5 rounded-lg shadow-md hover:bg-white/90 active:scale-95 transition-all"
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span className="font-semibold">
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold">
                 {cart.reduce(
                   (sum, item) => sum + item.quantity,
                   0,
@@ -865,6 +953,20 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
           selectedDish ? getItemQuantity(selectedDish.id) : 0
         }
       />
+
+      {/* Payment Method Selector Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] p-0 gap-0 bg-transparent border-none">
+          <DialogTitle className="sr-only">Select Payment Method</DialogTitle>
+          <DialogDescription className="sr-only">
+            Choose your preferred payment method: Cash, Credit/Debit Card, or QR Code
+          </DialogDescription>
+          <PaymentMethodSelector 
+            onConfirm={handlePaymentMethodConfirm}
+            grandTotal={cart.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0) * 1.19}
+          />
+        </DialogContent>
+      </Dialog>
       </div>
     </div>
   );

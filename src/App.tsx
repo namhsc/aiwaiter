@@ -3,6 +3,8 @@ import { AIWaiterChat } from './components/AIWaiterChat';
 import { CartScreen } from './components/CartScreen';
 import { PaymentScreen } from './components/PaymentScreen';
 import { FeedbackScreen } from './components/FeedbackScreen';
+import { GuestSelector } from './components/GuestSelector';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './components/ui/dialog';
 import { MenuItem, CartItem, Voucher } from './types/menu';
 import { findVoucher, validateVoucher, calculateDiscount } from './data/voucherData';
 
@@ -31,6 +33,10 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null);
   const [chatOpenedFrom, setChatOpenedFrom] = useState<'landing' | 'cart'>('landing');
+  
+  // Guest selection state
+  const [guestDialogOpen, setGuestDialogOpen] = useState(true);
+  const [guestData, setGuestData] = useState<{ adults: number; children: number; senior: number } | null>(null);
 
   const addToCart = (item: MenuItem) => {
     setCart(prevCart => {
@@ -80,7 +86,14 @@ export default function App() {
   const handleStartOver = () => {
     setCart([]);
     setAppliedVoucher(null);
+    setGuestData(null);
+    setGuestDialogOpen(true);
     setCurrentScreen('ai-chat');
+  };
+
+  const handleGuestConfirm = (data: { adults: number; children: number; senior: number }) => {
+    setGuestData(data);
+    setGuestDialogOpen(false);
   };
 
   const applyVoucher = (code: string): { success: boolean; message: string } => {
@@ -111,6 +124,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      {/* Main Screens */}
       {currentScreen === 'ai-chat' && (
         <AIWaiterChat
           onBack={() => setCurrentScreen('ai-chat')}
@@ -119,6 +133,8 @@ export default function App() {
           onViewCart={() => setCurrentScreen('cart')}
           openedFrom={chatOpenedFrom}
           tableNumber={tableNumber}
+          guestData={guestData}
+          onOpenGuestDialog={() => setGuestDialogOpen(true)}
         />
       )}
 
@@ -196,6 +212,37 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Guest Selector Dialog - Overlay on top of chatbot */}
+      <Dialog open={guestDialogOpen} onOpenChange={(open) => {
+        // Prevent closing the dialog if no guest data selected yet
+        if (!open && !guestData) {
+          return;
+        }
+        setGuestDialogOpen(open);
+      }}>
+        <DialogContent 
+          className="sm:max-w-[425px] p-0 gap-0 bg-transparent border-none" 
+          hideCloseButton={true}
+          onInteractOutside={(e) => {
+            // Prevent closing by clicking outside if no guest data selected
+            if (!guestData) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <DialogTitle className="sr-only">
+            {guestData ? 'Update Number of Guests' : 'Welcome - Select Number of Guests'}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {guestData 
+              ? 'Update the number of guests in your party' 
+              : 'Please select the number of guests in your party before starting your dining experience'
+            }
+          </DialogDescription>
+          <GuestSelector onConfirm={handleGuestConfirm} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

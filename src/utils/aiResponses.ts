@@ -316,6 +316,80 @@ export const generateAIResponse = (
   const lowerMessage = userMessage.toLowerCase();
   const autoAddedItems: MenuItem[] = [];
 
+  // PAYMENT METHOD HANDLING
+  // Check if user is specifying payment method after checkout
+  if (
+    lowerMessage.match(/pay\s*€?\d+\.?\d*\s*(using|with|via|by)/i) ||
+    (lowerMessage.match(/pay|payment/) && 
+     (lowerMessage.includes('cash') || lowerMessage.includes('credit') || 
+      lowerMessage.includes('debit') || lowerMessage.includes('card') || 
+      lowerMessage.includes('qr')))
+  ) {
+    let paymentMethod = '';
+    let methodEmoji = '';
+    let methodDetails = '';
+
+    if (lowerMessage.includes('cash')) {
+      paymentMethod = 'Cash';
+      methodEmoji = '💵';
+      methodDetails = 'Our server will bring your bill to the table. Exact change is appreciated but not required.';
+    } else if (lowerMessage.includes('credit') || lowerMessage.includes('debit') || lowerMessage.includes('card')) {
+      paymentMethod = 'Credit/Debit Card';
+      methodEmoji = '💳';
+      methodDetails = 'Perfect! Our server will bring a secure payment terminal to your table. We accept Visa, Mastercard, and Amex. Contactless payment is available.';
+    } else if (lowerMessage.includes('qr')) {
+      paymentMethod = 'QR Code';
+      methodEmoji = '📱';
+      methodDetails = 'Excellent choice! A QR code has been displayed above. Simply scan it with your mobile payment app (Apple Pay, Google Pay, Alipay, or WeChat Pay) to complete your payment securely.';
+    }
+
+    if (paymentMethod) {
+      return {
+        text: `${methodEmoji} **${paymentMethod} Selected**\n\n${methodDetails}\n\n✅ **Next Steps:**\n• Your order has been sent to the kitchen\n• Your food will be prepared fresh\n• Estimated time: 15-20 minutes\n\n🌟 Thank you for dining at **Lumière Dorée**! Our team will ensure your meal is extraordinary.\n\n💡 While you wait, would you like to:\n• Add drinks or dessert?\n• Learn about our chef's specials?\n• Get recommendations for your next visit?`,
+      };
+    }
+  }
+
+  // GUEST COUNT HANDLING
+  // Check if user is specifying number of guests
+  if (
+    lowerMessage.match(
+      /(\d+)\s*(adult|child|children|senior|guest)/i,
+    ) ||
+    lowerMessage.match(/we have|party of|table for/i)
+  ) {
+    // Extract guest counts
+    const adultMatch = lowerMessage.match(/(\d+)\s*adult/i);
+    const childMatch = lowerMessage.match(/(\d+)\s*child(?:ren)?/i);
+    const seniorMatch = lowerMessage.match(/(\d+)\s*senior/i);
+    const totalMatch = lowerMessage.match(/(\d+)\s*guest|party of (\d+)|table for (\d+)/i);
+
+    const adults = adultMatch ? parseInt(adultMatch[1]) : 0;
+    const children = childMatch ? parseInt(childMatch[1]) : 0;
+    const seniors = seniorMatch ? parseInt(seniorMatch[1]) : 0;
+    const total = adults + children + seniors;
+
+    let guestSummary = [];
+    if (adults > 0) guestSummary.push(`${adults} adult${adults > 1 ? 's' : ''}`);
+    if (children > 0) guestSummary.push(`${children} child${children > 1 ? 'ren' : ''}`);
+    if (seniors > 0) guestSummary.push(`${seniors} senior${seniors > 1 ? 's' : ''}`);
+
+    const guestText = guestSummary.length > 0 
+      ? guestSummary.join(', ')
+      : `${total} guest${total > 1 ? 's' : ''}`;
+
+    const kidsRecommendation = children > 0
+      ? `\\n\\n👶 **Kids Menu:** Since you have ${children} child${children > 1 ? 'ren' : ''}, may I recommend our Kids Meals? They're specially designed for younger palates!`
+      : '';
+
+    return {
+      text: `Perfect! I've noted your party size: **${guestText}** (${total} total). 🎉\\n\\nI'll make sure to recommend dishes and portion sizes suitable for your group!${kidsRecommendation}\\n\\n✨ **What would you like to explore?**\\n• \"Show me your popular dishes\"\\n• \"What do you recommend for ${total} people?\"\\n• \"I'd like to start with appetizers\"\\n\\nHow can I help you with your order?`,
+      suggestedItems: children > 0 
+        ? menuData.filter(item => item.name.toLowerCase().includes('kids') || item.category === 'starter').slice(0, 3)
+        : menuData.filter(item => item.popular).slice(0, 3),
+    };
+  }
+
   // INTELLIGENT ORDER PROCESSING
   // Check if user is trying to order something
   if (hasOrderingIntent(lowerMessage)) {

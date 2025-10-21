@@ -54,6 +54,10 @@ const phraseMapping: { [key: string]: string } = {
   // === SPECIAL OFFERS ===
   'discount': 'Do you have any current discounts?',
   'discounts': 'Are there any discounts available?',
+  
+  // === GUEST MANAGEMENT ===
+  'guests': 'I would like to specify the number of guests.',
+  'number of guests': 'I would like to specify the number of guests.',
 };
 
 /**
@@ -157,11 +161,11 @@ export function getContextualQuickActions(context: 'initial' | 'browsing' | 'car
  */
 export function getSpecialNoteActions(context: 'initial' | 'browsing' | 'cart-empty' | 'cart-full' | 'ordering'): string[] {
   const actions = {
-    initial: ['Kids Meals', 'Diet Dishes', 'Vegetarian', 'Gluten-free', 'Healthy'],
-    browsing: ['Kids Meals', 'Vegetarian', 'Light Options', 'Salads', 'Gluten-free'],
-    'cart-empty': ['Kids Meals', 'Diet Dishes', 'Vegetarian', 'Healthy', 'Gluten-free'],
-    'cart-full': ['Kids Meals', 'Salads', 'Light Options', 'Gluten-free'],
-    ordering: ['Kids Meals', 'Salads', 'Vegetarian', 'Light Options']
+    initial: ['Kids Meals', 'Diet Dishes', 'Vegetarian', 'Gluten-free', 'Allergies'],
+    browsing: ['Kids Meals', 'Vegetarian', 'Light Options', 'Salads', 'Allergies'],
+    'cart-empty': ['Kids Meals', 'Diet Dishes', 'Vegetarian', 'Healthy', 'Allergies'],
+    'cart-full': ['Kids Meals', 'Salads', 'Light Options', 'Gluten-free', 'Allergies'],
+    ordering: ['Kids Meals', 'Salads', 'Vegetarian', 'Light Options', 'Allergies']
   };
   
   return actions[context] || actions.initial;
