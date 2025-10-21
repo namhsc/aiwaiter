@@ -1,5 +1,11 @@
 import { MenuItem } from "../types/menu";
 import { menuData } from "../data/menuData";
+import { getCheckoutResponseText } from "./paymentHelpers";
+
+// Helper function to generate payment instructions
+const getPaymentInstructions = (): string => {
+  return `━━━━━━━━━━━━━━━━━━━━━━\n\n**Payment Methods Available:** 💳\n\n💵 **Cash**\n   Pay directly to your server\n   Exact change appreciated\n\n💳 **Credit / Debit Card**\n   Visa, Mastercard, Amex accepted\n   Contactless available\n\n📱 **QR Code Payment**\n   Scan & pay with your mobile\n   Supports: Apple Pay, Google Pay\n   Alipay, WeChat Pay accepted\n\n━━━━━━━━━━━━━━━━━━━━━━`;
+};
 
 // Helper function to extract quantity from message
 const extractQuantity = (message: string): number => {
@@ -135,7 +141,7 @@ const findMenuItems = (message: string): MenuItem[] => {
 // Check if message contains ordering intent
 const hasOrderingIntent = (message: string): boolean => {
   const lowerMessage = message.toLowerCase();
-  
+
   // EXCLUDE non-ordering intents first (checkout, bill, cart queries, menu browsing)
   const excludePatterns = [
     /checkout/,
@@ -158,11 +164,15 @@ const hasOrderingIntent = (message: string): boolean => {
     /do you have/,
     /are there/,
   ];
-  
-  if (excludePatterns.some(pattern => pattern.test(lowerMessage))) {
+
+  if (
+    excludePatterns.some((pattern) =>
+      pattern.test(lowerMessage),
+    )
+  ) {
     return false;
   }
-  
+
   const orderingKeywords = [
     "want",
     "would like",
@@ -419,9 +429,9 @@ export const generateAIResponse = (
           .join("\n") +
         `\n\n🍰 **Desserts**\n` +
         desserts
-          .map((i) => `• ${i.name} - $${i.price.toFixed(2)}`)
+          .map((i) => `• ${i.name} - ${i.price.toFixed(2)}`)
           .join("\n") +
-        `\n\n💡 **Quick ordering:** Just say "I want the Schnitzel" and I'll add it instantly!\n\nWould you like to see drinks, or shall I make a recommendation?`,
+        `\n\nWould you like to see drinks, or shall I make a recommendation?`,
       suggestedItems: [...starters, ...mains],
     };
   }
@@ -520,7 +530,7 @@ export const generateAIResponse = (
               `**${item.name}** ($${item.price.toFixed(2)})\n${item.description}${item.popular ? " ⭐" : ""}`,
           )
           .join("\n\n") +
-        `\n\n✨ All prepared with the same Michelin-inspired care as our other dishes!\n\n💡 **Quick order:** Just say "I'll have the Käsespätzle" to add it instantly!\n\nWhich one tempts you?`,
+        `\n\n✨ All prepared with the same Michelin-inspired care as our other dishes!\n\nWhich one tempts you?`,
       suggestedItems: veggieItems,
     };
   }
@@ -543,8 +553,7 @@ export const generateAIResponse = (
         "🧀 **Käsespätzle** ($12.90)\nKids love these cheesy German noodles - like a gourmet mac & cheese!\n\n" +
         "🥨 **Bavarian Pretzel** ($6.90)\nSoft, warm pretzel with cheese dip - perfect for small hands!\n\n" +
         "🍗 **Wiener Schnitzel** (Small Portion Available)\nWe can serve a child-sized portion of our famous Schnitzel!\n\n" +
-        "💡 **Note:** We're happy to make half-portions of most main dishes for children. Just ask!\n\n" +
-        '💡 **Quick order:** Say "Kids Käsespätzle" or "Small Schnitzel for a child"\n\nWhat would the children like?',
+        "💡 **Note:** We're happy to make half-portions of most main dishes for children. Just ask!\n\nWhat would the children like?",
       suggestedItems: kidFriendly as MenuItem[],
     };
   }
@@ -615,7 +624,7 @@ export const generateAIResponse = (
     };
   }
 
-  // NEW: Soups & Salads
+  // NEW: Soups & Salads - FIXED
   if (lowerMessage.match(/\bsalad\b|\bsalads\b/)) {
     const saladItems = [
       menuData.find((i) => i.name === "Kartoffelsalat"),
@@ -623,10 +632,9 @@ export const generateAIResponse = (
 
     return {
       text:
-        `Fresh salad options! 🥗✨\\n\\n` +
-        `**Kartoffelsalat** ($8.90)\\nAuthentic German potato salad with bacon, herbs, and tangy dressing - a must-try!\\n\\n` +
-        `We can also prepare fresh green salads with German dressing as a side.\\n\\n` +
-        `💡 **Quick order:** Say "I'll have the Kartoffelsalat"\\n\\nWould you like to add this?`,
+        `Fresh salad options! 🥗✨\n\n` +
+        `**Kartoffelsalat** ($8.90)\nAuthentic German potato salad with bacon, herbs, and tangy dressing - a must-try!\n\n` +
+        `We can also prepare fresh green salads with German dressing as a side.\n\nWould you like to add this?`,
       suggestedItems: saladItems as MenuItem[],
     };
   }
@@ -634,10 +642,10 @@ export const generateAIResponse = (
   if (lowerMessage.match(/\bsoup\b|\bsoups\b/)) {
     return {
       text:
-        `Warm soup selection! 🍲✨\\n\\n` +
-        `**Today's Special: Traditional German Potato Soup**\\n` +
-        `Hearty potato soup with bacon, vegetables, and fresh herbs. Served with crusty bread.\\n\\n` +
-        `💡 Available as a starter or light meal!\\n\\nWould you like to add soup to your order?`,
+        `Warm soup selection! 🍲✨\n\n` +
+        `**Today's Special: Traditional German Potato Soup**\n` +
+        `Hearty potato soup with bacon, vegetables, and fresh herbs. Served with crusty bread.\n\n` +
+        `💡 Available as a starter or light meal!\n\nWould you like to add soup to your order?`,
     };
   }
 
@@ -655,12 +663,12 @@ export const generateAIResponse = (
 
     return {
       text:
-        `Fast service options! ⚡✨\\n\\n**Ready quickly:**\\n\\n` +
-        `🥨 **Bavarian Pretzel** - Ready NOW! ($6.90)\\n` +
-        `🌭 **Bratwurst Platter** - 10 minutes ($15.90)\\n` +
-        `🍕 **Flammkuchen** - 15 minutes ($14.90)\\n\\n` +
-        `All prepared fresh but served quickly!\\n\\n` +
-        `💡 **Quick order:** Say "Pretzel now" or "Fast Bratwurst"\\n\\nWhat would you like?`,
+        `Fast service options! ⚡✨\n\n**Ready quickly:**\n\n` +
+        `🥨 **Bavarian Pretzel** - Ready NOW! ($6.90)\n` +
+        `🌭 **Bratwurst Platter** - 10 minutes ($15.90)\n` +
+        `🍕 **Flammkuchen** - 15 minutes ($14.90)\n\n` +
+        `All prepared fresh but served quickly!\n\n` +
+        `💡 **Quick order:** Say "Pretzel now" or "Fast Bratwurst"\n\nWhat would you like?`,
       suggestedItems: quickItems as MenuItem[],
     };
   }
@@ -675,13 +683,13 @@ export const generateAIResponse = (
 
     return {
       text:
-        `Today's Lunch Specials! 🍽️✨\\n\\n` +
-        `**Special Pricing (includes drink):**\\n\\n` +
-        `🍗 **Schnitzel Lunch** - $16.90 (save $2!)\\n` +
-        `🌭 **Bratwurst Special** - $12.90 (save $3!)\\n` +
-        `🧀 **Käsespätzle Lunch** - $10.90 (save $2!)\\n\\n` +
-        `Available until 3 PM daily!\\n\\n` +
-        `💡 **Quick order:** Say "Lunch Schnitzel" or "Bratwurst special"\\n\\nWhich appeals to you?`,
+        `Today's Lunch Specials! 🍽️✨\n\n` +
+        `**Special Pricing (includes drink):**\n\n` +
+        `🍗 **Schnitzel Lunch** - $16.90 (save $2!)\n` +
+        `🌭 **Bratwurst Special** - $12.90 (save $3!)\n` +
+        `🧀 **Käsespätzle Lunch** - $10.90 (save $2!)\n\n` +
+        `Available until 3 PM daily!\n\n` +
+        `💡 **Quick order:** Say "Lunch Schnitzel" or "Bratwurst special"\n\nWhich appeals to you?`,
       suggestedItems: lunchItems as MenuItem[],
     };
   }
@@ -698,11 +706,11 @@ export const generateAIResponse = (
 
     return {
       text:
-        `Authentic German tradition! 🇩🇪✨\\n\\n**Most traditional dishes:**\\n\\n` +
-        `🥩 **Sauerbraten** ($22.90)\\nMarinated pot roast - authentic family recipe, marinated for 3 days!\\n\\n` +
-        `🥩 **Rinderrouladen** ($22.90)\\nBeef rolls with pickles and mustard - grandmother's recipe!\\n\\n` +
-        `🍗 **Wiener Schnitzel** ($18.90)\\nClassic Viennese breaded veal - prepared the traditional way!\\n\\n` +
-        `All recipes passed down through generations! 👨‍🍳\\n\\n` +
+        `Authentic German tradition! 🇩🇪✨\n\n**Most traditional dishes:**\n\n` +
+        `🥩 **Sauerbraten** ($22.90)\nMarinated pot roast - authentic family recipe, marinated for 3 days!\n\n` +
+        `🥩 **Rinderrouladen** ($22.90)\nBeef rolls with pickles and mustard - grandmother's recipe!\n\n` +
+        `🍗 **Wiener Schnitzel** ($18.90)\nClassic Viennese breaded veal - prepared the traditional way!\n\n` +
+        `All recipes passed down through generations! 👨‍🍳\n\n` +
         `Which classic sounds good?`,
       suggestedItems: traditionalItems as MenuItem[],
     };
@@ -717,11 +725,11 @@ export const generateAIResponse = (
 
     return {
       text:
-        `Authentic Bavarian specialties! 🥨✨\\n\\n` +
-        `🥨 **Bavarian Pretzel** ($6.90)\\nWith Obatzda cheese dip - pure Bavaria!\\n\\n` +
-        `🧀 **Käsespätzle** ($12.90)\\nBavarian egg noodles with melted cheese\\n\\n` +
-        `🌭 **Bratwurst** ($15.90)\\nNuremberg-style sausages - traditional recipe!\\n\\n` +
-        `💡 **Pro tip:** Pair with our Bavarian Wheat Beer for the full experience!\\n\\n` +
+        `Authentic Bavarian specialties! 🥨✨\n\n` +
+        `🥨 **Bavarian Pretzel** ($6.90)\nWith Obatzda cheese dip - pure Bavaria!\n\n` +
+        `🧀 **Käsespätzle** ($12.90)\nBavarian egg noodles with melted cheese\n\n` +
+        `🌭 **Bratwurst** ($15.90)\nNuremberg-style sausages - traditional recipe!\n\n` +
+        `💡 **Pro tip:** Pair with our Bavarian Wheat Beer for the full experience!\n\n` +
         `What Bavarian treat would you like?`,
       suggestedItems: bavarianItems as MenuItem[],
     };
@@ -774,10 +782,10 @@ export const generateAIResponse = (
     };
   }
 
-  // Cart/Order status
+  // Cart/Order status (view cart, not checkout - checkout is handled separately below)
   if (
     lowerMessage.match(
-      /cart|order|what.*i.*(?:have|get|order)|my.*item|check.*out|basket/,
+      /(?:my|show|view|see).*(?:cart|order|basket)|what.*(?:did i|have i).*order|what.*i.*(?:have|get|order)|my.*item/,
     )
   ) {
     if (cart.length === 0) {
@@ -959,7 +967,7 @@ export const generateAIResponse = (
    * FIXED SECTIONS for aiResponses.ts
    *
    * Replace lines 619-676 in aiResponses.ts with the content below
-   * These sections had double-escaped newlines (\\n) which caused formatting issues
+   * These sections had double-escaped newlines (\n) which caused formatting issues
    * Now fixed to use single-escaped newlines (\n) for proper rendering
    */
 
@@ -1042,7 +1050,8 @@ export const generateAIResponse = (
     );
     const tax = total * 0.19;
     const grandTotal = total + tax;
-
+    
+    // Use payment helper for formatted checkout response
     return {
       text: `Perfect! Let's proceed to checkout! 💳✨\n\n**Order Summary:**\n📦 ${cart.length} item(s) - ${cart.reduce((sum, item) => sum + item.quantity, 0)} total dishes\n💰 Total: €${grandTotal.toFixed(2)} (incl. 19% VAT)\n\n**Next Steps:**\n1️⃣ Click the **Cart** button (top right) to review\n2️⃣ Confirm your order\n3️⃣ Choose payment method\n4️⃣ Your order goes straight to the kitchen!\n\n✨ **Estimated prep time:** 25-35 minutes\n\n💡 **Want to add anything else?** Just tell me before checking out!\n\nReady to view your cart?`,
     };

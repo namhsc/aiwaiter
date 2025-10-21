@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { LandingScreen } from './components/LandingScreen';
 import { AIWaiterChat } from './components/AIWaiterChat';
 import { CartScreen } from './components/CartScreen';
 import { PaymentScreen } from './components/PaymentScreen';
@@ -7,7 +6,7 @@ import { FeedbackScreen } from './components/FeedbackScreen';
 import { MenuItem, CartItem, Voucher } from './types/menu';
 import { findVoucher, validateVoucher, calculateDiscount } from './data/voucherData';
 
-type Screen = 'landing' | 'ai-chat' | 'cart' | 'payment' | 'feedback' | 'complete';
+type Screen = 'ai-chat' | 'cart' | 'payment' | 'feedback' | 'complete';
 
 // Detect browser language
 const detectLanguage = (): string => {
@@ -26,7 +25,7 @@ const detectLanguage = (): string => {
 };
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('landing');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('ai-chat');
   const [language] = useState(detectLanguage());
   const [tableNumber] = useState(String(Math.floor(Math.random() * 20) + 1));
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -81,7 +80,7 @@ export default function App() {
   const handleStartOver = () => {
     setCart([]);
     setAppliedVoucher(null);
-    setCurrentScreen('landing');
+    setCurrentScreen('ai-chat');
   };
 
   const applyVoucher = (code: string): { success: boolean; message: string } => {
@@ -112,28 +111,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      {currentScreen === 'landing' && (
-        <LandingScreen
-          language={language}
-          tableNumber={tableNumber}
-          onEnter={() => {
-            setChatOpenedFrom('landing');
-            setCurrentScreen('ai-chat');
-          }}
-          onOpenAI={() => {
-            setChatOpenedFrom('landing');
-            setCurrentScreen('ai-chat');
-          }}
-        />
-      )}
-
       {currentScreen === 'ai-chat' && (
         <AIWaiterChat
-          onBack={() => setCurrentScreen('landing')}
+          onBack={() => setCurrentScreen('ai-chat')}
           cart={cart}
           onAddToCart={addToCart}
           onViewCart={() => setCurrentScreen('cart')}
           openedFrom={chatOpenedFrom}
+          tableNumber={tableNumber}
         />
       )}
 

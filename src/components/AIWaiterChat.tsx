@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, MenuItem } from '../types/menu';
 import { generateAIResponse, quickReplies } from '../utils/aiResponses';
+import { getPaymentInstructions, getCheckoutResponseText } from '../utils/paymentHelpers';
 import { expandQuickAction, getContextualQuickActions, getSpecialNoteActions, getRecommendActions } from '../utils/quickActionExpander';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Mic, Volume2, Plus, ShoppingCart, Menu, Sparkles, Zap, TrendingUp, Info, StickyNote } from 'lucide-react';
+import { Send, Mic, Volume2, Plus, ShoppingCart, Menu, Sparkles, Zap, TrendingUp, Info, StickyNote, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { DishDetailsDialog } from './DishDetailsDialog';
+import { RestaurantLogo } from './RestaurantLogo';
 
 interface AIWaiterChatProps {
   onBack: () => void;
@@ -17,13 +20,23 @@ interface AIWaiterChatProps {
   onAddToCart: (item: MenuItem) => void;
   onViewCart: () => void;
   openedFrom?: 'landing' | 'cart';
+  tableNumber?: string;
 }
 
-export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom = 'landing' }: AIWaiterChatProps) {
+export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom = 'landing', tableNumber }: AIWaiterChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      text: "Good evening! 🌟 Welcome to **Lumière Dorée**. I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.\n\n✨ **I can instantly help you:**\n• 🍽️ Order in seconds - just say \"I want the Schnitzel\"\n• 🎯 Get personalized recommendations\n• 🌱 Filter by dietary needs & allergies\n• 🍷 Suggest perfect wine pairings\n• 💬 Answer any questions about our menu\n\n**Try these commands:**\n💡 \"What do you recommend?\"\n💡 \"I'll have 2 Bavarian Pretzels\"\n💡 \"Show me vegetarian options\"\n💡 \"Add Black Forest Cake\"\n\nWhat sounds delightful to you today?",
+      text: `Good evening! 🌟 Welcome to **Lumière Dorée**. I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
+
+✨ **I can instantly help you:**
+• 🍽️ Order in seconds - just say "I want the Schnitzel"
+• 🎯 Get personalized recommendations
+• 🌱 Filter by dietary needs & allergies
+• 🍷 Suggest perfect wine pairings
+• 💬 Answer any questions about our menu
+
+What sounds delightful to you today?`,
       sender: 'ai',
       timestamp: new Date()
     }
@@ -38,13 +51,16 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
   const [usedActions, setUsedActions] = useState<Set<string>>(new Set());
   const [flyingText, setFlyingText] = useState<{text: string, from: {x: number, y: number}} | null>(null);
   const [inputHighlight, setInputHighlight] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   
   // Reset used actions when chat is reopened to ensure Quick Actions are always visible
   useEffect(() => {
     setUsedActions(new Set());
+    setShowQuickActions(true);
   }, [openedFrom]);
 
   // Get context based on cart state
@@ -82,11 +98,36 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
     scrollToBottom();
   }, [messages, suggestedItems]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      const scrollHeight = inputRef.current.scrollHeight;
+      const lineHeight = 24; // Approximate line height
+      const maxHeight = lineHeight * 4; // 4 lines max
+      inputRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+    }
+  }, [inputValue]);
+
+  // Function to toggle Quick Actions
+  const handleToggleQuickActions = () => {
+    setShowQuickActions(prev => {
+      if (!prev) {
+        // If showing Quick Actions, reset used actions
+        setUsedActions(new Set());
+      }
+      return !prev;
+    });
+  };
+
   const handleSendMessage = (text: string) => {
     if (!text.trim()) return;
 
     // Hide onboarding after first message
     if (showOnboarding) setShowOnboarding(false);
+
+    // Hide Quick Actions when sending message
+    setShowQuickActions(false);
 
     // Add user message
     const userMessage: ChatMessage = {
@@ -100,14 +141,25 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
     setInputValue('');
     setIsTyping(true);
     setSuggestedItems([]);
-    setUsedActions(new Set()); // Reset used actions after sending message
 
     // Simulate AI thinking and response
     setTimeout(() => {
       const response = generateAIResponse(text, cart, onAddToCart);
+      
+      // Post-process checkout response to inject full payment instructions
+      let finalText = response.text;
+      if (finalText.includes('**Next Steps:**') || (text.toLowerCase().includes('checkout') && cart.length > 0)) {
+        // Calculate grand total
+        const total = cart.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
+        const tax = total * 0.19;
+        const grandTotal = total + tax;
+        // Use formatted checkout response with full payment info
+        finalText = getCheckoutResponseText(cart, grandTotal);
+      }
+      
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: response.text,
+        text: finalText,
         sender: 'ai',
         timestamp: new Date()
       };
@@ -184,7 +236,7 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
           inputRef.current.focus();
         }
       }, 0);
-    }, 500); // Match animation duration
+    }, 800); // Match animation duration
   };
 
   const handleAddItemToCart = (item: MenuItem) => {
@@ -197,7 +249,9 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
     // Add confirmation message
     const confirmMessage: ChatMessage = {
       id: Date.now().toString(),
-      text: `Perfect! I've added **${item.name}** to your cart. 🛒✨\n\nWould you like me to suggest a perfect pairing or continue exploring the menu?`,
+      text: `Perfect! I've added **${item.name}** to your cart. 🛒✨
+
+Would you like me to suggest a perfect pairing or continue exploring the menu?`,
       sender: 'ai',
       timestamp: new Date()
     };
@@ -209,50 +263,86 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-[#FFF9F0] via-[#FFF9F0] to-[#FFF4E0] flex flex-col z-50">
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] border-b border-[#B8860B]/30 px-4 py-4 shadow-lg flex items-center gap-3 shrink-0">
-        <Avatar className="w-12 h-12 border-3 border-white shadow-lg">
-          <AvatarFallback className="bg-white text-2xl">
-            🤵
-          </AvatarFallback>
-        </Avatar>
+      {/* Restaurant Header */}
+      <div className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] border-b border-[#B8860B]/30 px-4 py-3 shadow-lg flex items-center gap-3 shrink-0">
+        <div className="w-12 h-12 shrink-0">
+          <RestaurantLogo />
+        </div>
         
         <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <div className="text-white">AI Waiter</div>
-            <Badge className="bg-white/20 text-white border-white/30 text-xs">
-              <Sparkles className="w-3 h-3 mr-1" />
-              Intelligent
-            </Badge>
-          </div>
+          <h1 className="text-white" style={{ fontFamily: 'Georgia, serif' }}>
+            Lumière <span className="text-[#FFF9F0]">Dorée</span>
+          </h1>
           <div className="flex items-center gap-2 text-xs text-white/90">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            Online & ready to assist
+            <Badge className="bg-white/20 text-white border-white/30 text-[10px] px-2 py-0.5">
+              <Sparkles className="w-3 h-3 mr-1" />
+              AI Waiter
+            </Badge>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-[10px]">Online</span>
+            </div>
           </div>
         </div>
 
-        {cart.length > 0 && (
-          <button
-            onClick={onViewCart}
-            className="flex items-center gap-2 bg-white text-[#C4941D] px-4 py-2 rounded-full shadow-md active:scale-95 transition-transform"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {tableNumber && (
+            <div className="bg-[#4A3428] text-white px-3 py-1.5 rounded-lg shadow-md">
+              <span className="text-xs text-[#D4AF37]">Table</span>
+              <span className="ml-1.5 font-semibold">#{tableNumber}</span>
+            </div>
+          )}
+          
+          {cart.length > 0 && (
+            <button
+              onClick={onViewCart}
+              className="flex items-center gap-2 bg-white text-[#C4941D] px-4 py-2 rounded-full shadow-md active:scale-95 transition-transform"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Show Quick Actions Button */}
+      <AnimatePresence>
+        {!showQuickActions && (getSpecialNotes().length > 0 || getRecommendations().length > 0) && (
+          <motion.div
+            key="show-quick-actions-button"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 py-2 border-b border-[#C4941D]/10 bg-gradient-to-b from-white/60 to-transparent">
+              <button
+                onClick={handleToggleQuickActions}
+                className="w-full flex items-center justify-center gap-2 py-2 text-[#8B7355] hover:text-[#C4941D] transition-colors group"
+              >
+                <ChevronDown className="w-4 h-4 group-hover:animate-bounce" />
+                <span className="text-xs">Show Quick Actions</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quick Actions - Split into 2 Categories */}
       <AnimatePresence>
-        {(getSpecialNotes().length > 0 || getRecommendations().length > 0) && (
+        {showQuickActions && (getSpecialNotes().length > 0 || getRecommendations().length > 0) && (
           <motion.div
+            key="quick-actions"
             initial={{ height: 'auto', opacity: 1 }}
+            animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="overflow-hidden"
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden px-4 py-3 bg-gradient-to-b from-white/80 to-white/50 backdrop-blur-sm border-b border-[#C4941D]/10 shrink-0"
           >
-            <div className="px-4 py-3 bg-gradient-to-b from-white/80 to-white/50 backdrop-blur-sm border-b border-[#C4941D]/10 shrink-0 space-y-3">
+            <div className="space-y-3">
               <div className="max-w-2xl mx-auto">
+
                 {/* Special Note Actions */}
                 {getSpecialNotes().length > 0 && (
                   <motion.div
@@ -269,8 +359,14 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
                         <motion.div
                           key={index}
                           initial={{ opacity: 1, scale: 1 }}
-                          animate={usedActions.has(reply) ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.3 }}
+                          animate={usedActions.has(reply) ? { 
+                            opacity: 0, 
+                            scale: 0,
+                          } : { opacity: 1, scale: 1 }}
+                          transition={{ 
+                            duration: 0.5,
+                            ease: [0.4, 0.0, 0.2, 1]
+                          }}
                         >
                           <Button
                             onClick={(e) => handleQuickReply(reply, e.currentTarget)}
@@ -302,8 +398,14 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
                         <motion.div
                           key={index}
                           initial={{ opacity: 1, scale: 1 }}
-                          animate={usedActions.has(reply) ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.3 }}
+                          animate={usedActions.has(reply) ? { 
+                            opacity: 0, 
+                            scale: 0,
+                          } : { opacity: 1, scale: 1 }}
+                          transition={{ 
+                            duration: 0.5,
+                            ease: [0.4, 0.0, 0.2, 1]
+                          }}
                         >
                           <Button
                             onClick={(e) => handleQuickReply(reply, e.currentTarget)}
@@ -325,7 +427,7 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
       </AnimatePresence>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         <AnimatePresence>
           {messages.map((message, index) => (
             <motion.div
@@ -452,7 +554,7 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
 
       {/* Input Bar - Enhanced */}
       <div className="bg-white border-t border-[#C4941D]/20 px-4 py-4 shadow-2xl shrink-0">
-        <div className="max-w-2xl mx-auto flex gap-2">
+        <div className="max-w-2xl mx-auto flex gap-2 items-center">
           <div ref={inputContainerRef} className="flex-1 relative">
             <motion.div
               animate={inputHighlight ? {
@@ -463,16 +565,22 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
                 ]
               } : {}}
               transition={{ duration: 0.6 }}
-              className="rounded-full"
+              className="rounded-3xl"
             >
-              <Input
+              <Textarea
                 ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(inputValue);
+                  }
+                }}
                 placeholder="Ask me anything..."
-                className="rounded-full border-[#C4941D]/30 pr-12 h-12 bg-white shadow-sm focus:shadow-md transition-shadow"
+                className="rounded-3xl border-[#C4941D]/30 pr-12 min-h-[48px] max-h-[96px] bg-white shadow-sm focus:shadow-md transition-shadow resize-none overflow-y-auto py-3 scrollbar-hide"
                 disabled={isSpeaking}
+                rows={1}
               />
             </motion.div>
           </div>
@@ -508,15 +616,9 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
             Listening...
           </motion.div>
         )}
-
-        {!isSpeaking && inputValue.trim() === '' && (
-          <div className="text-center text-xs text-[#8B7355] mt-2">
-            💡 Type your order or tap the microphone to speak
-          </div>
-        )}
       </div>
 
-      {/* Flying Text Animation */}
+      {/* Flying Text Animation - Shrinks while flying */}
       <AnimatePresence>
         {flyingText && inputContainerRef.current && (
           <motion.div
@@ -530,13 +632,19 @@ export function AIWaiterChat({ onBack, cart, onAddToCart, onViewCart, openedFrom
             animate={{
               left: inputContainerRef.current.getBoundingClientRect().left + inputContainerRef.current.getBoundingClientRect().width / 2,
               top: inputContainerRef.current.getBoundingClientRect().top + inputContainerRef.current.getBoundingClientRect().height / 2,
-              opacity: 0.8,
-              scale: 0.9,
+              opacity: [1, 0.95, 0.85, 0.7, 0.5, 0.3],
+              scale: [1, 0.9, 0.75, 0.6, 0.45, 0.3],
             }}
-            exit={{ opacity: 0, scale: 0.5 }}
+            exit={{ opacity: 0, scale: 0.2 }}
             transition={{
-              duration: 0.5,
-              ease: [0.4, 0.0, 0.2, 1]
+              duration: 0.8,
+              ease: [0.25, 0.1, 0.25, 1],
+              opacity: {
+                times: [0, 0.2, 0.4, 0.6, 0.8, 1]
+              },
+              scale: {
+                times: [0, 0.2, 0.4, 0.6, 0.8, 1]
+              }
             }}
             className="pointer-events-none z-[100] px-3 py-1.5 bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-full text-xs shadow-lg whitespace-nowrap"
             style={{
