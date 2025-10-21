@@ -42,8 +42,8 @@ export function PaymentScreen({ subtotal, discount, total, onComplete, onOpenAI,
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF9F0]">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-[#FFF9F0] flex justify-center">
+      <div className="w-full max-w-[480px]">
         <AnimatePresence mode="wait">
           {!isComplete ? (
             <motion.div

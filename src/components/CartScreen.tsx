@@ -84,10 +84,12 @@ export function CartScreen({
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF9F0] pb-32">
+    <div className="min-h-screen bg-[#FFF9F0] flex justify-center">
+      {/* Mobile-First Container */}
+      <div className="w-full max-w-[480px] min-h-screen bg-[#FFF9F0] pb-32">
       {/* Header */}
       <div className="bg-white border-b border-[#C4941D]/20 px-4 py-4 shadow-sm sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <Button
             onClick={onBack}
             variant="ghost"
@@ -102,7 +104,7 @@ export function CartScreen({
       </div>
 
       {/* Cart Items */}
-      <div className="max-w-md mx-auto px-4 py-6">
+      <div className="px-4 py-6">
         {cart.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -342,8 +344,8 @@ export function CartScreen({
 
       {/* Confirm Order Button */}
       {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#C4941D]/20 p-4 shadow-2xl">
-          <div className="max-w-md mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#C4941D]/20 p-4 shadow-2xl">
+          <div>
             <Button
               onClick={handleConfirm}
               className="w-full h-14 rounded-xl bg-[#C4941D] text-white shadow-lg"
@@ -394,6 +396,7 @@ export function CartScreen({
           </motion.button>
         </motion.div>
       )}
+      </div>
     </div>
   );
 }
