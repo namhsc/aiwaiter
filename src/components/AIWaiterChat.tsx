@@ -1,9 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, MenuItem } from "../types/menu";
-import {
-  generateAIResponse,
-  quickReplies,
-} from "../utils/aiResponses";
+import { generateAIResponse, quickReplies } from "../utils/aiResponses";
 import {
   getPaymentInstructions,
   getCheckoutResponseText,
@@ -39,8 +36,14 @@ import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { DishDetailsDialog } from "./DishDetailsDialog";
 import { RestaurantLogo } from "./RestaurantLogo";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "./ui/dialog";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
+import { ChatMessageAI } from "../hook/useDualSocket";
 
 interface AIWaiterChatProps {
   onBack: () => void;
@@ -51,6 +54,8 @@ interface AIWaiterChatProps {
   tableNumber?: string;
   guestData: { adults: number; children: number; senior: number } | null;
   onOpenGuestDialog?: () => void;
+  sendMessage: (text: string) => void;
+  messagesAI: ChatMessageAI[];
 }
 
 export function AIWaiterChat({
@@ -62,18 +67,33 @@ export function AIWaiterChat({
   tableNumber,
   guestData,
   onOpenGuestDialog,
+  sendMessage,
+  messagesAI,
 }: AIWaiterChatProps) {
   // Generate welcome message with guest information
   const getWelcomeMessage = () => {
     if (guestData) {
-      const totalGuests = guestData.adults + guestData.children + guestData.senior;
+      const totalGuests =
+        guestData.adults + guestData.children + guestData.senior;
       const guestBreakdown = [
-        guestData.adults > 0 ? `${guestData.adults} adult${guestData.adults > 1 ? 's' : ''}` : null,
-        guestData.children > 0 ? `${guestData.children} child${guestData.children > 1 ? 'ren' : ''}` : null,
-        guestData.senior > 0 ? `${guestData.senior} senior${guestData.senior > 1 ? 's' : ''}` : null,
-      ].filter(Boolean).join(', ');
+        guestData.adults > 0
+          ? `${guestData.adults} adult${guestData.adults > 1 ? "s" : ""}`
+          : null,
+        guestData.children > 0
+          ? `${guestData.children} child${guestData.children > 1 ? "ren" : ""}`
+          : null,
+        guestData.senior > 0
+          ? `${guestData.senior} senior${guestData.senior > 1 ? "s" : ""}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
 
-      return `Good evening! 🌟 Welcome to **Lumière Dorée**${tableNumber ? `, Table #${tableNumber}` : ''}. I see we have **${totalGuests} guest${totalGuests > 1 ? 's' : ''}** today (${guestBreakdown}) - wonderful!
+      return `Good evening! 🌟 Welcome to **Lumière Dorée**${
+        tableNumber ? `, Table #${tableNumber}` : ""
+      }. I see we have **${totalGuests} guest${
+        totalGuests > 1 ? "s" : ""
+      }** today (${guestBreakdown}) - wonderful!
 
 I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
 
@@ -87,7 +107,9 @@ I'm your AI Waiter, powered by advanced intelligence to make your dining experie
 What sounds delightful to you today?`;
     }
 
-    return `Good evening! 🌟 Welcome to **Lumière Dorée**${tableNumber ? `, Table #${tableNumber}` : ''}.
+    return `Good evening! 🌟 Welcome to **Lumière Dorée**${
+      tableNumber ? `, Table #${tableNumber}` : ""
+    }.
 
 I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
 
@@ -101,34 +123,21 @@ I'm your AI Waiter, powered by advanced intelligence to make your dining experie
 What sounds delightful to you today?`;
   };
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      text: getWelcomeMessage(),
-      sender: "ai",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [suggestedItems, setSuggestedItems] = useState<
-    MenuItem[]
-  >([]);
+  const [suggestedItems, setSuggestedItems] = useState<MenuItem[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [selectedDish, setSelectedDish] =
-    useState<MenuItem | null>(null);
+  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [dishDialogOpen, setDishDialogOpen] = useState(false);
-  const [usedActions, setUsedActions] = useState<Set<string>>(
-    new Set(),
-  );
+  const [usedActions, setUsedActions] = useState<Set<string>>(new Set());
   const [flyingText, setFlyingText] = useState<{
     text: string;
     from: { x: number; y: number };
   } | null>(null);
   const [inputHighlight, setInputHighlight] = useState(false);
-  const [showQuickActions, setShowQuickActions] =
-    useState(true);
+  const [showQuickActions, setShowQuickActions] = useState(true);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -143,7 +152,7 @@ What sounds delightful to you today?`;
 
   // Update welcome message when guest data is confirmed
   useEffect(() => {
-    if (guestData && messages.length === 1) {
+    if (guestData && !messagesAI.length) {
       setMessages([
         {
           id: "1",
@@ -153,7 +162,32 @@ What sounds delightful to you today?`;
         },
       ]);
     }
-  }, [guestData]);
+
+    if (guestData && messagesAI.length) {
+      setMessages([
+        {
+          id: "1",
+          text: getWelcomeMessage(),
+          sender: "ai",
+          timestamp: new Date(),
+        },
+        ...messagesAI.map((itemMess: ChatMessageAI) => {
+          const { data_reply } = itemMess;
+          const inforCretor = JSON.parse(data_reply.author);
+
+          return {
+            id: data_reply.id,
+            text: data_reply.content,
+            sender: (inforCretor.type === "user" ? "user" : "ai") as
+              | "user"
+              | "ai",
+            timestamp: new Date(data_reply.created_at),
+          };
+        }),
+      ]);
+      setIsTyping(false);
+    }
+  }, [guestData, messagesAI]);
 
   // Get context based on cart state
   const getContext = ():
@@ -173,23 +207,17 @@ What sounds delightful to you today?`;
   // Get special note actions (dietary, kids, etc.)
   const getSpecialNotes = (): string[] => {
     const allActions = getSpecialNoteActions(getContext());
-    return allActions.filter(
-      (action) => !usedActions.has(action),
-    );
+    return allActions.filter((action) => !usedActions.has(action));
   };
 
   // Get recommendation actions (popular, specials, etc.)
   const getRecommendations = (): string[] => {
     const allActions = getRecommendActions(getContext());
-    return allActions.filter(
-      (action) => !usedActions.has(action),
-    );
+    return allActions.filter((action) => !usedActions.has(action));
   };
 
   const getItemQuantity = (itemId: string) => {
-    const cartItem = cart.find(
-      (item: any) => item.id === itemId,
-    );
+    const cartItem = cart.find((item: any) => item.id === itemId);
     return cartItem ? cartItem.quantity : 0;
   };
 
@@ -210,8 +238,7 @@ What sounds delightful to you today?`;
       const scrollHeight = inputRef.current.scrollHeight;
       const lineHeight = 24; // Approximate line height
       const maxHeight = lineHeight * 4; // 4 lines max
-      inputRef.current.style.height =
-        Math.min(scrollHeight, maxHeight) + "px";
+      inputRef.current.style.height = Math.min(scrollHeight, maxHeight) + "px";
     }
   }, [inputValue]);
 
@@ -234,78 +261,57 @@ What sounds delightful to you today?`;
 
     // Hide Quick Actions when sending message
     setShowQuickActions(false);
-
-    // Add user message
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      text: text.trim(),
-      sender: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    sendMessage(text);
     setInputValue("");
     setIsTyping(true);
     setSuggestedItems([]);
 
+    return;
+
     // Simulate AI thinking and response
-    setTimeout(
-      () => {
-        const response = generateAIResponse(
-          text,
-          cart,
-          onAddToCart,
+    setTimeout(() => {
+      const response = generateAIResponse(text, cart, onAddToCart);
+
+      // Post-process checkout response to inject full payment instructions
+      let finalText = response.text;
+      if (
+        finalText.includes("**Next Steps:**") ||
+        (text.toLowerCase().includes("checkout") && cart.length > 0)
+      ) {
+        // Calculate grand total
+        const total = cart.reduce(
+          (sum: number, item: any) => sum + item.price * item.quantity,
+          0
         );
+        const tax = total * 0.19;
+        const grandTotal = total + tax;
+        // Use formatted checkout response with full payment info
+        finalText = getCheckoutResponseText(cart, grandTotal);
+      }
 
-        // Post-process checkout response to inject full payment instructions
-        let finalText = response.text;
-        if (
-          finalText.includes("**Next Steps:**") ||
-          (text.toLowerCase().includes("checkout") &&
-            cart.length > 0)
-        ) {
-          // Calculate grand total
-          const total = cart.reduce(
-            (sum: number, item: any) =>
-              sum + item.price * item.quantity,
-            0,
-          );
-          const tax = total * 0.19;
-          const grandTotal = total + tax;
-          // Use formatted checkout response with full payment info
-          finalText = getCheckoutResponseText(cart, grandTotal);
-        }
+      const aiMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: finalText,
+        sender: "ai",
+        timestamp: new Date(),
+      };
 
-        const aiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          text: finalText,
-          sender: "ai",
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, aiMessage]);
-        if (response.suggestedItems) {
-          setSuggestedItems(response.suggestedItems);
-        }
-        // Don't show suggested items if items were auto-added (they're already in cart)
-        if (
-          response.autoAddedItems &&
-          response.autoAddedItems.length > 0
-        ) {
-          // Items were auto-added, so don't show them as suggestions
-          const nonAddedItems =
-            response.suggestedItems?.filter(
-              (item) =>
-                !response.autoAddedItems?.some(
-                  (added) => added.id === item.id,
-                ),
-            ) || [];
-          setSuggestedItems(nonAddedItems);
-        }
-        setIsTyping(false);
-      },
-      600 + Math.random() * 600,
-    );
+      setMessages((prev) => [...prev, aiMessage]);
+      if (response.suggestedItems) {
+        setSuggestedItems(response.suggestedItems);
+      }
+      // Don't show suggested items if items were auto-added (they're already in cart)
+      if (response.autoAddedItems && response.autoAddedItems.length > 0) {
+        // Items were auto-added, so don't show them as suggestions
+        const nonAddedItems =
+          response.suggestedItems?.filter(
+            (item) =>
+              !response.autoAddedItems?.some((added) => added.id === item.id)
+          ) || [];
+        setSuggestedItems(nonAddedItems);
+      }
+      setIsTyping(false);
+    }, 600 + Math.random() * 600);
   };
 
   const handleVoiceInput = () => {
@@ -322,20 +328,14 @@ What sounds delightful to you today?`;
     setTimeout(() => {
       setIsSpeaking(false);
       const randomCommand =
-        voiceCommands[
-          Math.floor(Math.random() * voiceCommands.length)
-        ];
+        voiceCommands[Math.floor(Math.random() * voiceCommands.length)];
       handleSendMessage(randomCommand);
     }, 1800);
   };
 
-  const handleQuickReply = (
-    reply: string,
-    buttonElement: HTMLElement,
-  ) => {
-
+  const handleQuickReply = (reply: string, buttonElement: HTMLElement) => {
     // Special handling for "Checkout" or "Bill" action - open payment dialog instead
-    if (reply.toLowerCase() === 'checkout' || reply.toLowerCase() === 'bill') {
+    if (reply.toLowerCase() === "checkout" || reply.toLowerCase() === "bill") {
       if (cart.length === 0) {
         // If cart is empty, send regular message
         const expandedPhrase = expandQuickAction(reply);
@@ -372,9 +372,7 @@ What sounds delightful to you today?`;
     setTimeout(() => {
       // Append the expanded phrase to existing input value (concatenate)
       setInputValue((prev) =>
-        prev.trim()
-          ? prev + " " + expandedPhrase
-          : expandedPhrase,
+        prev.trim() ? prev + " " + expandedPhrase : expandedPhrase
       );
 
       // Clear flying text
@@ -405,7 +403,7 @@ What sounds delightful to you today?`;
       id: Date.now().toString(),
       text: `Perfect! I've added **${item.name}** to your cart. 🛒✨
 
-Would you like me to suggest a perfect pairing or continue exploring the menu?`,
+  Would you like me to suggest a perfect pairing or continue exploring the menu?`,
       sender: "ai",
       timestamp: new Date(),
     };
@@ -422,13 +420,15 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
     // Calculate total
     const total = cart.reduce(
       (sum: number, item: any) => sum + item.price * item.quantity,
-      0,
+      0
     );
     const tax = total * 0.19;
     const grandTotal = total + tax;
 
     // Create a natural language message
-    const paymentMessage = `I would like to pay €${grandTotal.toFixed(2)} using ${method.name}`;
+    const paymentMessage = `I would like to pay €${grandTotal.toFixed(
+      2
+    )} using ${method.name}`;
 
     // Send the message automatically
     handleSendMessage(paymentMessage);
@@ -438,124 +438,114 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
     <div className="fixed inset-0 bg-gradient-to-br from-[#FFF9F0] via-[#FFF9F0] to-[#FFF4E0] flex justify-center z-50">
       {/* Mobile-First Container with Max Width */}
       <div className="w-full max-w-[480px] flex flex-col bg-gradient-to-br from-[#FFF9F0] via-[#FFF9F0] to-[#FFF4E0]">
-      {/* Restaurant Header */}
-      <div className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] border-b border-[#B8860B]/30 px-4 py-3 shadow-lg flex items-center gap-3 shrink-0">
-        <div className="w-12 h-12 shrink-0">
-          <RestaurantLogo />
-        </div>
+        {/* Restaurant Header */}
+        <div className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] border-b border-[#B8860B]/30 px-4 py-3 shadow-lg flex items-center gap-3 shrink-0">
+          <div className="w-12 h-12 shrink-0">
+            <RestaurantLogo />
+          </div>
 
-        <div className="flex-1">
-          <h1
-            className="text-white"
-            style={{ fontFamily: "Georgia, serif" }}
-          >
-            Lumière{" "}
-            <span className="text-[#FFF9F0]">Dorée</span>
-          </h1>
-          <div className="flex items-center gap-2 text-xs text-white/90">
-            <Badge className="bg-white/20 text-white border-white/30 text-[10px] px-2 py-0.5">
-              <Sparkles className="w-3 h-3 mr-1" />
-              AI Waiter
-            </Badge>
-            <div className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-[10px]">Online</span>
+          <div className="flex-1">
+            <h1 className="text-white" style={{ fontFamily: "Georgia, serif" }}>
+              Lumière <span className="text-[#FFF9F0]">Dorée</span>
+            </h1>
+            <div className="flex items-center gap-2 text-xs text-white/90">
+              <Badge className="bg-white/20 text-white border-white/30 text-[10px] px-2 py-0.5">
+                <Sparkles className="w-3 h-3 mr-1" />
+                AI Waiter
+              </Badge>
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-[10px]">Online</span>
+              </div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {guestData && (
+              <button
+                onClick={onOpenGuestDialog}
+                className="flex items-center gap-1.5 bg-[#4A3428] text-white px-2.5 py-1.5 rounded-lg shadow-md hover:bg-[#5A4438] active:scale-95 transition-all"
+              >
+                <Users className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span className="text-xs font-semibold">
+                  {guestData.adults + guestData.children + guestData.senior}
+                </span>
+              </button>
+            )}
+
+            {cart.length > 0 && (
+              <button
+                onClick={onViewCart}
+                className="flex items-center gap-1.5 bg-white text-[#C4941D] px-2.5 py-1.5 rounded-lg shadow-md hover:bg-white/90 active:scale-95 transition-all"
+              >
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {guestData && (
-            <button
-              onClick={onOpenGuestDialog}
-              className="flex items-center gap-1.5 bg-[#4A3428] text-white px-2.5 py-1.5 rounded-lg shadow-md hover:bg-[#5A4438] active:scale-95 transition-all"
-            >
-              <Users className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span className="text-xs font-semibold">
-                {guestData.adults + guestData.children + guestData.senior}
-              </span>
-            </button>
-          )}
+        {/* Show Quick Actions Button */}
+        <AnimatePresence>
+          {!showQuickActions &&
+            (getSpecialNotes().length > 0 ||
+              getRecommendations().length > 0) && (
+              <motion.div
+                key="show-quick-actions-button"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 py-2 border-b border-[#C4941D]/10 bg-gradient-to-b from-white/60 to-transparent">
+                  <button
+                    onClick={handleToggleQuickActions}
+                    className="w-full flex items-center justify-center gap-2 py-2 text-[#8B7355] hover:text-[#C4941D] transition-colors group"
+                  >
+                    <ChevronDown className="w-4 h-4 group-hover:animate-bounce" />
+                    <span className="text-xs">Show Quick Actions</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+        </AnimatePresence>
 
-          {cart.length > 0 && (
-            <button
-              onClick={onViewCart}
-              className="flex items-center gap-1.5 bg-white text-[#C4941D] px-2.5 py-1.5 rounded-lg shadow-md hover:bg-white/90 active:scale-95 transition-all"
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-              <span className="text-xs font-semibold">
-                {cart.reduce(
-                  (sum, item) => sum + item.quantity,
-                  0,
-                )}
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Show Quick Actions Button */}
-      <AnimatePresence>
-        {!showQuickActions &&
-          (getSpecialNotes().length > 0 ||
-            getRecommendations().length > 0) && (
-            <motion.div
-              key="show-quick-actions-button"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
-            >
-              <div className="px-4 py-2 border-b border-[#C4941D]/10 bg-gradient-to-b from-white/60 to-transparent">
-                <button
-                  onClick={handleToggleQuickActions}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-[#8B7355] hover:text-[#C4941D] transition-colors group"
-                >
-                  <ChevronDown className="w-4 h-4 group-hover:animate-bounce" />
-                  <span className="text-xs">
-                    Show Quick Actions
-                  </span>
-                </button>
-              </div>
-            </motion.div>
-          )}
-      </AnimatePresence>
-
-      {/* Quick Actions - Split into 2 Categories */}
-      <AnimatePresence>
-        {showQuickActions &&
-          (getSpecialNotes().length > 0 ||
-            getRecommendations().length > 0) && (
-            <motion.div
-              key="quick-actions"
-              initial={{ height: "auto", opacity: 1 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{
-                duration: 0.3,
-                ease: [0.4, 0, 0.2, 1],
-              }}
-              className="overflow-hidden px-4 py-3 bg-gradient-to-b from-white/80 to-white/50 backdrop-blur-sm border-b border-[#C4941D]/10 shrink-0"
-            >
-              <div className="space-y-3">
-                <div className="max-w-2xl mx-auto">
-                  {/* Special Note Actions */}
-                  {getSpecialNotes().length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <StickyNote className="w-3.5 h-3.5 text-[#8B7355]" />
-                        <span className="text-xs text-[#8B7355]">
-                          Special Note
-                        </span>
-                      </div>
-                      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                        {getSpecialNotes().map(
-                          (reply, index) => (
+        {/* Quick Actions - Split into 2 Categories */}
+        <AnimatePresence>
+          {showQuickActions &&
+            (getSpecialNotes().length > 0 ||
+              getRecommendations().length > 0) && (
+              <motion.div
+                key="quick-actions"
+                initial={{ height: "auto", opacity: 1 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{
+                  duration: 0.3,
+                  ease: [0.4, 0, 0.2, 1],
+                }}
+                className="overflow-hidden px-4 py-3 bg-gradient-to-b from-white/80 to-white/50 backdrop-blur-sm border-b border-[#C4941D]/10 shrink-0"
+              >
+                <div className="space-y-3">
+                  <div className="max-w-2xl mx-auto">
+                    {/* Special Note Actions */}
+                    {getSpecialNotes().length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <StickyNote className="w-3.5 h-3.5 text-[#8B7355]" />
+                          <span className="text-xs text-[#8B7355]">
+                            Special Note
+                          </span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                          {getSpecialNotes().map((reply, index) => (
                             <motion.div
                               key={index}
                               initial={{ opacity: 1, scale: 1 }}
@@ -573,11 +563,8 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
                               }}
                             >
                               <Button
-                                onClick={(e) =>
-                                  handleQuickReply(
-                                    reply,
-                                    e.currentTarget,
-                                  )
+                                onClick={(e: any) =>
+                                  handleQuickReply(reply, e.currentTarget)
                                 }
                                 variant="outline"
                                 size="sm"
@@ -586,28 +573,26 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
                                 {reply}
                               </Button>
                             </motion.div>
-                          ),
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
 
-                  {/* Recommend Actions */}
-                  {getRecommendations().length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-3.5 h-3.5 text-[#C4941D]" />
-                        <span className="text-xs text-[#8B7355]">
-                          Recommend
-                        </span>
-                      </div>
-                      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                        {getRecommendations().map(
-                          (reply, index) => (
+                    {/* Recommend Actions */}
+                    {getRecommendations().length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Sparkles className="w-3.5 h-3.5 text-[#C4941D]" />
+                          <span className="text-xs text-[#8B7355]">
+                            Recommend
+                          </span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                          {getRecommendations().map((reply, index) => (
                             <motion.div
                               key={index}
                               initial={{ opacity: 1, scale: 1 }}
@@ -625,11 +610,8 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
                               }}
                             >
                               <Button
-                                onClick={(e) =>
-                                  handleQuickReply(
-                                    reply,
-                                    e.currentTarget,
-                                  )
+                                onClick={(e: any) =>
+                                  handleQuickReply(reply, e.currentTarget)
                                 }
                                 variant="outline"
                                 size="sm"
@@ -638,335 +620,327 @@ Would you like me to suggest a perfect pairing or continue exploring the menu?`,
                                 {reply}
                               </Button>
                             </motion.div>
-                          ),
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+        </AnimatePresence>
+
+        {/* Messages */}
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+        >
+          <AnimatePresence>
+            {messages.map((message, index) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`flex ${
+                  message.sender === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                {message.sender === "ai" && (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4941D] to-[#D4A52D] flex items-center justify-center text-white mr-2 shrink-0 mt-1 shadow-md">
+                    🤵
+                  </div>
+                )}
+
+                <div
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
+                    message.sender === "user"
+                      ? "bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-br-sm"
+                      : "bg-white text-[#3E2723] rounded-bl-sm border border-[#C4941D]/10"
+                  }`}
+                >
+                  <div
+                    className="text-sm leading-relaxed break-words"
+                    style={{ whiteSpace: "pre-wrap" }}
+                  >
+                    {message.text.split("**").map((part, i) =>
+                      i % 2 === 0 ? (
+                        <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+                          {part}
+                        </span>
+                      ) : (
+                        <strong
+                          key={i}
+                          className={
+                            message.sender === "user"
+                              ? "text-white"
+                              : "text-[#C4941D]"
+                          }
+                          style={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {part}
+                        </strong>
+                      )
+                    )}
+                  </div>
+                  <div
+                    className={`text-xs mt-1.5 ${
+                      message.sender === "user"
+                        ? "text-white/80"
+                        : "text-[#8B7355]"
+                    }`}
+                  >
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
+
+                {message.sender === "user" && (
+                  <div className="w-9 h-9 rounded-full bg-[#8B7355] flex items-center justify-center text-white ml-2 shrink-0 mt-1 shadow-md">
+                    👤
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Typing Indicator */}
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start"
+            >
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4941D] to-[#D4A52D] flex items-center justify-center text-white mr-2 shrink-0 shadow-md">
+                🤵
+              </div>
+              <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-md border border-[#C4941D]/10">
+                <div className="flex gap-1.5">
+                  <div
+                    className="w-2 h-2 bg-[#C4941D] rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-[#C4941D] rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-[#C4941D] rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             </motion.div>
           )}
-      </AnimatePresence>
 
-      {/* Messages */}
-      <div
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
-      >
-        <AnimatePresence>
-          {messages.map((message, index) => (
+          {/* Suggested Items */}
+          {suggestedItems.length > 0 && (
             <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+              className="space-y-2"
             >
-              {message.sender === "ai" && (
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4941D] to-[#D4A52D] flex items-center justify-center text-white mr-2 shrink-0 mt-1 shadow-md">
-                  🤵
-                </div>
-              )}
-
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
-                  message.sender === "user"
-                    ? "bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-br-sm"
-                    : "bg-white text-[#3E2723] rounded-bl-sm border border-[#C4941D]/10"
-                }`}
-              >
-                <div
-                  className="text-sm leading-relaxed break-words"
-                  style={{ whiteSpace: "pre-wrap" }}
-                >
-                  {message.text.split("**").map((part, i) =>
-                    i % 2 === 0 ? (
-                      <span
-                        key={i}
-                        style={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {part}
-                      </span>
-                    ) : (
-                      <strong
-                        key={i}
-                        className={
-                          message.sender === "user"
-                            ? "text-white"
-                            : "text-[#C4941D]"
-                        }
-                        style={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {part}
-                      </strong>
-                    ),
-                  )}
-                </div>
-                <div
-                  className={`text-xs mt-1.5 ${
-                    message.sender === "user"
-                      ? "text-white/80"
-                      : "text-[#8B7355]"
-                  }`}
-                >
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
+              <div className="flex items-center gap-2 text-xs text-[#8B7355] uppercase tracking-wider px-2">
+                <Sparkles className="w-3.5 h-3.5" />
+                Suggested for you - Tap to add
               </div>
-
-              {message.sender === "user" && (
-                <div className="w-9 h-9 rounded-full bg-[#8B7355] flex items-center justify-center text-white ml-2 shrink-0 mt-1 shadow-md">
-                  👤
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* Typing Indicator */}
-        {isTyping && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-start"
-          >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4941D] to-[#D4A52D] flex items-center justify-center text-white mr-2 shrink-0 shadow-md">
-              🤵
-            </div>
-            <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-md border border-[#C4941D]/10">
-              <div className="flex gap-1.5">
-                <div
-                  className="w-2 h-2 bg-[#C4941D] rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                />
-                <div
-                  className="w-2 h-2 bg-[#C4941D] rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                />
-                <div
-                  className="w-2 h-2 bg-[#C4941D] rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Suggested Items */}
-        {suggestedItems.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-2"
-          >
-            <div className="flex items-center gap-2 text-xs text-[#8B7355] uppercase tracking-wider px-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              Suggested for you - Tap to add
-            </div>
-            {suggestedItems.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                onClick={() => {
-                  setSelectedDish(item);
-                  setDishDialogOpen(true);
-                }}
-                className="bg-white rounded-xl shadow-md border border-[#C4941D]/10 p-3 flex gap-3 items-center hover:shadow-lg transition-all cursor-pointer hover:border-[#C4941D]/30 active:scale-[0.98]"
-              >
-                <ImageWithFallback
-                  src={item.image}
-                  alt={item.name}
-                  className="w-16 h-16 rounded-lg object-cover shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h4 className="text-[#3E2723] text-sm">
-                      {item.name}
-                    </h4>
-                    <div className="text-[#C4941D] shrink-0">
-                      €{item.price.toFixed(2)}
+              {suggestedItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => {
+                    setSelectedDish(item);
+                    setDishDialogOpen(true);
+                  }}
+                  className="bg-white rounded-xl shadow-md border border-[#C4941D]/10 p-3 flex gap-3 items-center hover:shadow-lg transition-all cursor-pointer hover:border-[#C4941D]/30 active:scale-[0.98]"
+                >
+                  <ImageWithFallback
+                    src={item.image}
+                    alt={item.name}
+                    className="w-16 h-16 rounded-lg object-cover shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h4 className="text-[#3E2723] text-sm">{item.name}</h4>
+                      <div className="text-[#C4941D] shrink-0">
+                        €{item.price.toFixed(2)}
+                      </div>
                     </div>
+                    <p className="text-xs text-[#8B7355] line-clamp-1">
+                      {item.description}
+                    </p>
                   </div>
-                  <p className="text-xs text-[#8B7355] line-clamp-1">
-                    {item.description}
-                  </p>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddItemToCart(item);
-                    }}
-                    size="icon"
-                    className="bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-full w-9 h-9 shadow-md hover:shadow-lg"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Bar - Enhanced */}
-      <div className="bg-white border-t border-[#C4941D]/20 px-4 py-4 shadow-2xl shrink-0">
-        <div className="max-w-2xl mx-auto flex gap-2 items-center">
-          <div
-            ref={inputContainerRef}
-            className="flex-1 relative"
-          >
-            <motion.div
-              animate={
-                inputHighlight
-                  ? {
-                      boxShadow: [
-                        "0 0 0px rgba(196, 148, 29, 0)",
-                        "0 0 20px rgba(196, 148, 29, 0.6)",
-                        "0 0 0px rgba(196, 148, 29, 0)",
-                      ],
-                    }
-                  : {}
-              }
-              transition={{ duration: 0.6 }}
-              className="rounded-3xl"
-            >
-              <Textarea
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(inputValue);
-                  }
-                }}
-                placeholder="Ask me anything..."
-                className="rounded-3xl border-[#C4941D]/30 pr-12 min-h-[48px] max-h-[96px] bg-white shadow-sm focus:shadow-md transition-shadow resize-none overflow-y-auto py-3 scrollbar-hide"
-                disabled={isSpeaking}
-                rows={1}
-              />
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      onClick={(e: any) => {
+                        e.stopPropagation();
+                        handleAddItemToCart(item);
+                      }}
+                      size="icon"
+                      className="bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-full w-9 h-9 shadow-md hover:shadow-lg"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
             </motion.div>
-          </div>
+          )}
 
-          <Button
-            onClick={handleVoiceInput}
-            variant="outline"
-            size="icon"
-            className={`rounded-full w-12 h-12 shrink-0 shadow-md ${
-              isSpeaking
-                ? "bg-red-500 text-white border-red-500 animate-pulse"
-                : "border-[#C4941D]/30 hover:bg-[#C4941D]/10"
-            }`}
-          >
-            {isSpeaking ? (
-              <Volume2 className="w-5 h-5" />
-            ) : (
-              <Mic className="w-5 h-5" />
-            )}
-          </Button>
-
-          <Button
-            onClick={() => handleSendMessage(inputValue)}
-            size="icon"
-            className="rounded-full w-12 h-12 bg-gradient-to-br from-[#C4941D] to-[#D4A52D] shrink-0 shadow-md hover:shadow-lg transition-shadow"
-            disabled={!inputValue.trim() || isSpeaking}
-          >
-            <Send className="w-5 h-5" />
-          </Button>
+          <div ref={messagesEndRef} />
         </div>
 
-        {isSpeaking && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center text-sm text-red-500 mt-2 flex items-center justify-center gap-2"
-          >
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            Listening...
-          </motion.div>
-        )}
-      </div>
+        {/* Input Bar - Enhanced */}
+        <div className="bg-white border-t border-[#C4941D]/20 px-4 py-4 shadow-2xl shrink-0">
+          <div className="max-w-2xl mx-auto flex gap-2 items-center">
+            <div ref={inputContainerRef} className="flex-1 relative">
+              <motion.div
+                animate={
+                  inputHighlight
+                    ? {
+                        boxShadow: [
+                          "0 0 0px rgba(196, 148, 29, 0)",
+                          "0 0 20px rgba(196, 148, 29, 0.6)",
+                          "0 0 0px rgba(196, 148, 29, 0)",
+                        ],
+                      }
+                    : {}
+                }
+                transition={{ duration: 0.6 }}
+                className="rounded-3xl"
+              >
+                <Textarea
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (isTyping) return;
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage(inputValue);
+                    }
+                  }}
+                  placeholder="Ask me anything..."
+                  className="rounded-3xl border-[#C4941D]/30 pr-12 min-h-[48px] max-h-[96px] bg-white shadow-sm focus:shadow-md transition-shadow resize-none overflow-y-auto py-3 scrollbar-hide"
+                  disabled={isSpeaking}
+                  rows={1}
+                />
+              </motion.div>
+            </div>
 
-      {/* Flying Text Animation - Shrinks while flying */}
-      <AnimatePresence>
-        {flyingText && inputContainerRef.current && (
-          <motion.div
-            initial={{
-              position: "fixed",
-              left: flyingText.from.x,
-              top: flyingText.from.y,
-              opacity: 1,
-              scale: 1,
-            }}
-            animate={{
-              left:
-                inputContainerRef.current.getBoundingClientRect()
-                  .left +
-                inputContainerRef.current.getBoundingClientRect()
-                  .width /
-                  2,
-              top:
-                inputContainerRef.current.getBoundingClientRect()
-                  .top +
-                inputContainerRef.current.getBoundingClientRect()
-                  .height /
-                  2,
-              opacity: [1, 0.95, 0.85, 0.7, 0.5, 0.3],
-              scale: [1, 0.9, 0.75, 0.6, 0.45, 0.3],
-            }}
-            exit={{ opacity: 0, scale: 0.2 }}
-            transition={{
-              duration: 0.8,
-              ease: [0.25, 0.1, 0.25, 1],
-              opacity: {
-                times: [0, 0.2, 0.4, 0.6, 0.8, 1],
-              },
-              scale: {
-                times: [0, 0.2, 0.4, 0.6, 0.8, 1],
-              },
-            }}
-            className="pointer-events-none z-[100] px-3 py-1.5 bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-full text-xs shadow-lg whitespace-nowrap"
-            style={{
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            {flyingText.text}
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <Button
+              onClick={handleVoiceInput}
+              variant="outline"
+              size="icon"
+              className={`rounded-full w-12 h-12 shrink-0 shadow-md ${
+                isSpeaking
+                  ? "bg-red-500 text-white border-red-500 animate-pulse"
+                  : "border-[#C4941D]/30 hover:bg-[#C4941D]/10"
+              }`}
+            >
+              {isSpeaking ? (
+                <Volume2 className="w-5 h-5" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
+            </Button>
 
-      {/* Dish Details Dialog */}
-      <DishDetailsDialog
-        dish={selectedDish}
-        open={dishDialogOpen}
-        onOpenChange={setDishDialogOpen}
-        onAddToCart={(item) => onAddToCart(item)}
-        cartQuantity={
-          selectedDish ? getItemQuantity(selectedDish.id) : 0
-        }
-      />
+            <Button
+              onClick={() => handleSendMessage(inputValue)}
+              size="icon"
+              className="rounded-full w-12 h-12 bg-gradient-to-br from-[#C4941D] to-[#D4A52D] shrink-0 shadow-md hover:shadow-lg transition-shadow"
+              disabled={!inputValue.trim() || isSpeaking || isTyping}
+            >
+              <Send className="w-5 h-5" />
+            </Button>
+          </div>
 
-      {/* Payment Method Selector Dialog */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] p-0 gap-0 bg-transparent border-none">
-          <DialogTitle className="sr-only">Select Payment Method</DialogTitle>
-          <DialogDescription className="sr-only">
-            Choose your preferred payment method: Cash, Credit/Debit Card, or QR Code
-          </DialogDescription>
-          <PaymentMethodSelector 
-            onConfirm={handlePaymentMethodConfirm}
-            grandTotal={cart.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0) * 1.19}
-          />
-        </DialogContent>
-      </Dialog>
+          {isSpeaking && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-sm text-red-500 mt-2 flex items-center justify-center gap-2"
+            >
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              Listening...
+            </motion.div>
+          )}
+        </div>
+
+        {/* Flying Text Animation - Shrinks while flying */}
+        <AnimatePresence>
+          {flyingText && inputContainerRef.current && (
+            <motion.div
+              initial={{
+                position: "fixed",
+                left: flyingText.from.x,
+                top: flyingText.from.y,
+                opacity: 1,
+                scale: 1,
+              }}
+              animate={{
+                left:
+                  inputContainerRef.current.getBoundingClientRect().left +
+                  inputContainerRef.current.getBoundingClientRect().width / 2,
+                top:
+                  inputContainerRef.current.getBoundingClientRect().top +
+                  inputContainerRef.current.getBoundingClientRect().height / 2,
+                opacity: [1, 0.95, 0.85, 0.7, 0.5, 0.3],
+                scale: [1, 0.9, 0.75, 0.6, 0.45, 0.3],
+              }}
+              exit={{ opacity: 0, scale: 0.2 }}
+              transition={{
+                duration: 0.8,
+                ease: [0.25, 0.1, 0.25, 1],
+                opacity: {
+                  times: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                },
+                scale: {
+                  times: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                },
+              }}
+              className="pointer-events-none z-[100] px-3 py-1.5 bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-full text-xs shadow-lg whitespace-nowrap"
+              style={{
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              {flyingText.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Dish Details Dialog */}
+        <DishDetailsDialog
+          dish={selectedDish}
+          open={dishDialogOpen}
+          onOpenChange={setDishDialogOpen}
+          onAddToCart={(item) => onAddToCart(item)}
+          cartQuantity={selectedDish ? getItemQuantity(selectedDish.id) : 0}
+        />
+
+        {/* Payment Method Selector Dialog */}
+        <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+          <DialogContent className="sm:max-w-[425px] p-0 gap-0 bg-transparent border-none">
+            <DialogTitle className="sr-only">Select Payment Method</DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose your preferred payment method: Cash, Credit/Debit Card, or
+              QR Code
+            </DialogDescription>
+            <PaymentMethodSelector
+              onConfirm={handlePaymentMethodConfirm}
+              grandTotal={
+                cart.reduce(
+                  (sum: number, item: any) => sum + item.price * item.quantity,
+                  0
+                ) * 1.19
+              }
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
