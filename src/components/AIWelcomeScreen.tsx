@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion } from 'motion/react';
 import { Button } from './ui/button';
 import { Sparkles, MessageCircle, Menu, Zap, Brain, Star } from 'lucide-react';

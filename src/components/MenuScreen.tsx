@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { MenuItem } from '../types/menu';
 import { menuData } from '../data/menuData';
 import { Button } from './ui/button';
