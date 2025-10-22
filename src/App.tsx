@@ -163,6 +163,8 @@ export default function App() {
           onBack={() => setCurrentScreen("ai-chat")}
           cart={cart}
           onAddToCart={addToCart}
+          onUpdateQuantity={updateQuantity}
+          onRemoveItem={removeItem}
           onViewCart={() => setCurrentScreen("cart")}
           openedFrom={chatOpenedFrom}
           tableNumber={tableNumber}

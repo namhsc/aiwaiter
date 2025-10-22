@@ -15,12 +15,14 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Send,
   Mic,
   Volume2,
   Plus,
+  Minus,
   ShoppingCart,
   Menu,
   Sparkles,
@@ -36,7 +38,6 @@ import {
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { DishDetailsDialog } from "./DishDetailsDialog";
 import { RestaurantLogo } from "./RestaurantLogo";
 import {
   Dialog,
@@ -48,10 +49,69 @@ import { PaymentMethodSelector } from "./PaymentMethodSelector";
 import { ChatMessageAI } from "../hook/useDualSocket";
 import React from "react";
 
+// Function to render HTML content safely
+const renderHTML = (text: string) => {
+  // First handle **bold** syntax
+  let processedText = text.split("**").map((part, i) =>
+    i % 2 === 0 ? (
+      <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+        {part}
+      </span>
+    ) : (
+      <strong
+        key={i}
+        className="text-[#C4941D]"
+        style={{ whiteSpace: "pre-wrap" }}
+      >
+        {part}
+      </strong>
+    )
+  );
+
+  // Then process HTML tags
+  const processHTML = (content: React.ReactNode): React.ReactNode => {
+    if (typeof content === 'string') {
+      // Handle <strong> tags
+      const strongRegex = /<strong>(.*?)<\/strong>/g;
+      const parts = content.split(strongRegex);
+      
+      return parts.map((part, index) => {
+        if (index % 2 === 1) {
+          // This is the content inside <strong> tags
+          return (
+            <strong key={index} className="text-[#C4941D] font-semibold">
+              {part}
+            </strong>
+          );
+        }
+        return part;
+      });
+    }
+    
+    if (React.isValidElement(content)) {
+      return React.cloneElement(content, {}, processHTML((content.props as any).children));
+    }
+    
+    if (Array.isArray(content)) {
+      return content.map((item, index) => (
+        <React.Fragment key={index}>
+          {processHTML(item)}
+        </React.Fragment>
+      ));
+    }
+    
+    return content;
+  };
+
+  return processHTML(processedText);
+};
+
 interface AIWaiterChatProps {
   onBack: () => void;
   cart: any[];
   onAddToCart: (item: MenuItem) => void;
+  onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+  onRemoveItem?: (itemId: string) => void;
   onViewCart: () => void;
   openedFrom?: "landing" | "cart";
   tableNumber?: string;
@@ -67,6 +127,8 @@ export function AIWaiterChat({
   onBack,
   cart,
   onAddToCart,
+  onUpdateQuantity,
+  onRemoveItem,
   onViewCart,
   openedFrom = "landing",
   tableNumber,
@@ -135,8 +197,6 @@ What sounds delightful to you today?`;
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [suggestedItems, setSuggestedItems] = useState<MenuItem[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
-  const [dishDialogOpen, setDishDialogOpen] = useState(false);
   const [usedActions, setUsedActions] = useState<Set<string>>(new Set());
   const [flyingText, setFlyingText] = useState<{
     text: string;
@@ -149,6 +209,38 @@ What sounds delightful to you today?`;
   const [menuDragY, setMenuDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartY, setDragStartY] = useState(0);
+  const [activeMenuTab, setActiveMenuTab] = useState<string>("starter");
+  
+  // Helper function to get menu items by category
+  const getMenuItemsByCategory = (category: string) => {
+    return menuData.filter(item => item.category === category);
+  };
+
+  // Helper function to get item quantity in cart
+  const getItemQuantity = (itemId: string) => {
+    const cartItem = cart.find(item => item.id === itemId);
+    return cartItem ? cartItem.quantity : 0;
+  };
+
+  // Helper functions for quantity control
+  const handleIncrementQuantity = (item: MenuItem) => {
+    const currentQuantity = getItemQuantity(item.id);
+    if (currentQuantity === 0) {
+      onAddToCart(item);
+    } else if (onUpdateQuantity) {
+      onUpdateQuantity(item.id, currentQuantity + 1);
+    }
+  };
+
+  const handleDecrementQuantity = (itemId: string) => {
+    const currentQuantity = getItemQuantity(itemId);
+    if (currentQuantity > 1 && onUpdateQuantity) {
+      onUpdateQuantity(itemId, currentQuantity - 1);
+    } else if (currentQuantity === 1 && onRemoveItem) {
+      onRemoveItem(itemId);
+    }
+  };
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
@@ -274,10 +366,6 @@ What sounds delightful to you today?`;
     return allActions.filter((action) => !usedActions.has(action));
   };
 
-  const getItemQuantity = (itemId: string) => {
-    const cartItem = cart.find((item: any) => item.id === itemId);
-    return cartItem ? cartItem.quantity : 0;
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
@@ -313,6 +401,12 @@ What sounds delightful to you today?`;
 
   const handleSendMessage = (text: string) => {
     if (!text.trim()) return;
+
+    // Hide menu overlay if it's open
+    if (showMenuOverlay) {
+      setShowMenuOverlay(false);
+      setShowQuickActions(true);
+    }
 
     // Hide onboarding after first message
     if (showOnboarding) setShowOnboarding(false);
@@ -373,6 +467,12 @@ What sounds delightful to you today?`;
   };
 
   const handleVoiceInput = () => {
+    // Hide menu overlay if it's open when starting voice input
+    if (showMenuOverlay) {
+      setShowMenuOverlay(false);
+      setShowQuickActions(true);
+    }
+
     // Simulate voice recording with random voice commands
     const voiceCommands = [
       "I'd like to order the Wiener Schnitzel please",
@@ -392,6 +492,12 @@ What sounds delightful to you today?`;
   };
 
   const handleQuickReply = (reply: string, buttonElement: HTMLElement) => {
+    // Hide menu overlay if it's open when using quick replies
+    if (showMenuOverlay) {
+      setShowMenuOverlay(false);
+      setShowQuickActions(true);
+    }
+
     // Special handling for "Checkout" or "Bill" action - open payment dialog instead
     if (reply.toLowerCase() === "checkout" || reply.toLowerCase() === "bill") {
       if (cart.length === 0) {
@@ -732,7 +838,7 @@ What sounds delightful to you today?`;
           className="flex-1 overflow-y-auto px-4 py-6 space-y-4 relative"
         >
           <AnimatePresence>
-            {messages.map((message, index) => (
+            {!showMenuOverlay && messages.map((message, index) => (
               <motion.div
                 key={message.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -759,23 +865,23 @@ What sounds delightful to you today?`;
                     className="text-sm leading-relaxed break-words"
                     style={{ whiteSpace: "pre-wrap" }}
                   >
-                    {message.text.split("**").map((part, i) =>
-                      i % 2 === 0 ? (
-                        <span key={i} style={{ whiteSpace: "pre-wrap" }}>
-                          {part}
-                        </span>
-                      ) : (
-                        <strong
-                          key={i}
-                          className={
-                            message.sender === "user"
-                              ? "text-white"
-                              : "text-[#C4941D]"
-                          }
-                          style={{ whiteSpace: "pre-wrap" }}
-                        >
-                          {part}
-                        </strong>
+                    {message.sender === "ai" ? (
+                      renderHTML(message.text)
+                    ) : (
+                      message.text.split("**").map((part, i) =>
+                        i % 2 === 0 ? (
+                          <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+                            {part}
+                          </span>
+                        ) : (
+                          <strong
+                            key={i}
+                            className="text-white"
+                            style={{ whiteSpace: "pre-wrap" }}
+                          >
+                            {part}
+                          </strong>
+                        )
                       )
                     )}
                   </div>
@@ -848,10 +954,6 @@ What sounds delightful to you today?`;
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  onClick={() => {
-                    setSelectedDish(item);
-                    setDishDialogOpen(true);
-                  }}
                   className="bg-white rounded-xl shadow-md border border-[#C4941D]/10 p-3 flex gap-3 items-center hover:shadow-lg transition-all cursor-pointer hover:border-[#C4941D]/30 active:scale-[0.98]"
                 >
                   <ImageWithFallback
@@ -913,86 +1015,162 @@ What sounds delightful to you today?`;
                     onClick={(e) => e.stopPropagation()}
                   >
                   {/* Drag Handle */}
-                  <div 
-                    className="flex justify-center py-3 border-b border-[#C4941D]/10 cursor-grab active:cursor-grabbing flex-shrink-0"
-                    onMouseDown={handleMenuDragStart}
-                    onTouchStart={handleMenuDragStart}
-                  >
-                    <div className="w-12 h-1 bg-[#C4941D]/30 rounded-full" />
-                  </div>
 
-                  {/* Menu Content */}
-                  <div className="flex-1 px-4 py-4 overflow-y-auto scroll-smooth">
-                    <div className="space-y-4 pb-4">
-                      {menuData.map((item, index) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="bg-white rounded-2xl shadow-sm overflow-hidden border border-[#C4941D]/10 cursor-pointer active:scale-[0.98] transition-transform"
-                          onClick={() => {
-                            setSelectedDish(item);
-                            setDishDialogOpen(true);
-                          }}
-                        >
-                          <div className="flex gap-4 p-4">
-                            {/* Image */}
-                            <div className="relative flex-shrink-0">
-                              <ImageWithFallback
-                                src={item.image}
-                                alt={item.name}
-                                className="w-20 h-20 rounded-xl object-cover"
-                              />
-                              {item.popular && (
-                                <Badge className="absolute -top-1 -right-1 bg-[#C4941D] text-white border-0 text-xs">
-                                  ⭐
-                                </Badge>
-                              )}
-                            </div>
-
-                            {/* Details */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <h3 className="text-[#3E2723] line-clamp-1 text-sm font-medium">
-                                  {item.name}
-                                </h3>
-                                <div className="text-[#C4941D] shrink-0 font-semibold">
-                                  €{item.price.toFixed(2)}
-                                </div>
+                  {/* Menu Content with Tabs */}
+                  <div className="flex flex-col h-full">
+                    <Tabs value={activeMenuTab} onValueChange={setActiveMenuTab} className="flex flex-col h-full">
+                      {/* Tab Headers - Simple Layout */}
+                      <div className="px-4 pt-4 pb-3 bg-white flex-shrink-0">
+                        <div className="flex gap-1">
+                          {[
+                            { value: 'starter', label: 'Starters', emoji: '🥨' },
+                            { value: 'main', label: 'Main', emoji: '🍖' },
+                            { value: 'dessert', label: 'Dessert', emoji: '🍰' },
+                            { value: 'drinks', label: 'Drinks', emoji: '🍺' }
+                          ].map((tab) => (
+                            <button
+                              key={tab.value}
+                              onClick={() => setActiveMenuTab(tab.value)}
+                              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                activeMenuTab === tab.value
+                                  ? 'bg-[#C4941D] text-white'
+                                  : 'text-[#8B7355] hover:bg-[#C4941D]/10'
+                              }`}
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="text-sm">{tab.emoji}</span>
+                                <span className="text-xs">{tab.label}</span>
                               </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                              <p className="text-xs text-[#8B7355] line-clamp-2 mb-2">
-                                {item.description}
-                              </p>
+                      {/* Tab Content - Scrollable Area */}
+                      <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-[#C4941D]/30 scrollbar-track-transparent">
+                        {['starter', 'main', 'dessert', 'drinks'].map((category) => (
+                          <TabsContent key={category} value={category} className="mt-0 h-full">
+                            <div className="space-y-3 pb-6 h-full">
+                              {getMenuItemsByCategory(category).map((item, index) => (
+                                <div
+                                  key={item.id}
+                                  className="bg-white rounded-lg shadow-sm border border-[#C4941D]/10 hover:shadow-md transition-shadow"
+                                >
+                                  <div className="flex gap-3 p-3">
+                                    {/* Image */}
+                                    <div className="relative flex-shrink-0">
+                                      <ImageWithFallback
+                                        src={item.image}
+                                        alt={item.name}
+                                        className="w-16 h-16 rounded-lg object-cover"
+                                      />
+                                      {item.popular && (
+                                        <Badge className="absolute -top-1 -right-1 bg-[#C4941D] text-white border-0 text-xs">
+                                          ⭐
+                                        </Badge>
+                                      )}
+                                    </div>
 
-                              {/* Badges */}
-                              <div className="flex flex-wrap items-center gap-1 mb-2">
-                                {item.vegetarian && (
-                                  <div className="flex items-center gap-1 px-2 py-0.5 bg-[#E8F5E9] rounded-md border border-[#6B8E23]/30">
-                                    <Leaf className="w-2.5 h-2.5 text-[#6B8E23]" />
-                                    <span className="text-xs text-[#6B8E23]">Veggie</span>
+                                    {/* Details */}
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="text-[#3E2723] line-clamp-1 text-sm font-medium mb-1">
+                                        {item.name}
+                                      </h3>
+
+                                      <p className="text-xs text-[#8B7355] line-clamp-2 mb-2">
+                                        {item.description}
+                                      </p>
+
+                                      {/* Badges */}
+                                      <div className="flex items-center gap-2 mb-3">
+                                        {item.vegetarian && (
+                                          <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded text-xs text-green-700">
+                                            <Leaf className="w-3 h-3" />
+                                            Veggie
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Redesigned Quantity Controls */}
+                                      <div className="flex items-center justify-between">
+                                        {/* Price Display */}
+                                        <div className="flex flex-col">
+                                          <span className="text-lg font-bold text-[#C4941D]">
+                                            €{item.price.toFixed(2)}
+                                          </span>
+                                          {item.prepTime && (
+                                            <span className="text-xs text-[#8B7355]">
+                                              {item.prepTime}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {/* Quantity Controls */}
+                                        {getItemQuantity(item.id) === 0 ? (
+                                          <motion.button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleIncrementQuantity(item);
+                                            }}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] text-white rounded-full px-6 py-2 text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 group"
+                                          >
+                                            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                                            <span>Add</span>
+                                          </motion.button>
+                                        ) : (
+                                          <motion.div 
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="flex items-center gap-3"
+                                          >
+                                            <motion.button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDecrementQuantity(item.id);
+                                              }}
+                                              whileHover={{ scale: 1.1 }}
+                                              whileTap={{ scale: 0.9 }}
+                                              className="w-9 h-9 rounded-full bg-[#C4941D] text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group"
+                                            >
+                                              <Minus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            </motion.button>
+                                            
+                                            <motion.div 
+                                              className="flex items-center justify-center min-w-[40px] h-9 p-2 w-5"
+                                              initial={{ scale: 0 }}
+                                              animate={{ scale: 1 }}
+                                              transition={{ delay: 0.1 }}
+                                            >
+                                              <span className="text-lg font-semibold text-[#C4941D] text-center">
+                                                {getItemQuantity(item.id)}
+                                              </span>
+                                            </motion.div>
+                                            
+                                            <motion.button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleIncrementQuantity(item);
+                                              }}
+                                              whileHover={{ scale: 1.1 }}
+                                              whileTap={{ scale: 0.9 }}
+                                              className="w-9 h-9 rounded-full bg-[#C4941D] text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group"
+                                            >
+                                              <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            </motion.button>
+                                          </motion.div>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
-                                )}
-                              </div>
-
-                              {/* Add Button */}
-                              <Button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAddItemToCart(item);
-                                }}
-                                size="sm"
-                                className="w-full bg-[#C4941D] text-white rounded-lg h-8 text-xs"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add to Cart
-                              </Button>
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
+                          </TabsContent>
+                        ))}
+                      </div>
+                    </Tabs>
                   </div>
                 </motion.div>
               </motion.div>
@@ -1134,14 +1312,6 @@ What sounds delightful to you today?`;
           )}
         </AnimatePresence>
 
-        {/* Dish Details Dialog */}
-        <DishDetailsDialog
-          dish={selectedDish}
-          open={dishDialogOpen}
-          onOpenChange={setDishDialogOpen}
-          onAddToCart={(item) => onAddToCart(item)}
-          cartQuantity={selectedDish ? getItemQuantity(selectedDish.id) : 0}
-        />
 
         {/* Payment Method Selector Dialog */}
         <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
