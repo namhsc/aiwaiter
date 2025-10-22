@@ -3,7 +3,6 @@ import { AIWaiterChat } from "./components/AIWaiterChat";
 import { CartScreen } from "./components/CartScreen";
 import { PaymentScreen } from "./components/PaymentScreen";
 import { FeedbackScreen } from "./components/FeedbackScreen";
-import { GuestSelector } from "./components/GuestSelector";
 import {
   Dialog,
   DialogContent,
@@ -46,14 +45,6 @@ export default function App() {
   const [chatOpenedFrom, setChatOpenedFrom] = useState<"landing" | "cart">(
     "landing"
   );
-
-  // Guest selection state
-  const [guestDialogOpen, setGuestDialogOpen] = useState(true);
-  const [guestData, setGuestData] = useState<{
-    adults: number;
-    children: number;
-    senior: number;
-  } | null>(null);
 
   const addToCart = (item: MenuItem) => {
     setCart((prevCart) => {
@@ -103,18 +94,7 @@ export default function App() {
   const handleStartOver = () => {
     setCart([]);
     setAppliedVoucher(null);
-    setGuestData(null);
-    setGuestDialogOpen(true);
     setCurrentScreen("ai-chat");
-  };
-
-  const handleGuestConfirm = (data: {
-    adults: number;
-    children: number;
-    senior: number;
-  }) => {
-    setGuestData(data);
-    setGuestDialogOpen(false);
   };
 
   const applyVoucher = (
@@ -168,8 +148,6 @@ export default function App() {
           onViewCart={() => setCurrentScreen("cart")}
           openedFrom={chatOpenedFrom}
           tableNumber={tableNumber}
-          guestData={guestData}
-          onOpenGuestDialog={() => setGuestDialogOpen(true)}
           sendMessage={sendMessage}
           messagesAI={messages}
           isTyping={typing}
@@ -251,40 +229,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Guest Selector Dialog - Overlay on top of chatbot */}
-      <Dialog
-        open={guestDialogOpen}
-        onOpenChange={(open: any) => {
-          // Prevent closing the dialog if no guest data selected yet
-          if (!open && !guestData) {
-            return;
-          }
-          setGuestDialogOpen(open);
-        }}
-      >
-        <DialogContent
-          className="sm:max-w-[425px] p-0 gap-0 bg-transparent border-none"
-          hideCloseButton={true}
-          onInteractOutside={(e: any) => {
-            // Prevent closing by clicking outside if no guest data selected
-            if (!guestData) {
-              e.preventDefault();
-            }
-          }}
-        >
-          <DialogTitle className="sr-only">
-            {guestData
-              ? "Update Number of Guests"
-              : "Welcome - Select Number of Guests"}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            {guestData
-              ? "Update the number of guests in your party"
-              : "Please select the number of guests in your party before starting your dining experience"}
-          </DialogDescription>
-          <GuestSelector onConfirm={handleGuestConfirm} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

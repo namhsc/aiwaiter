@@ -55,9 +55,6 @@ const phraseMapping: { [key: string]: string } = {
   'discount': 'Do you have any current discounts?',
   'discounts': 'Are there any discounts available?',
   
-  // === GUEST MANAGEMENT ===
-  'guests': 'I would like to specify the number of guests.',
-  'number of guests': 'I would like to specify the number of guests.',
 };
 
 /**

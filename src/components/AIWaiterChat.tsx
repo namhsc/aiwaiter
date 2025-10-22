@@ -31,7 +31,6 @@ import {
   Info,
   StickyNote,
   ChevronDown,
-  Users,
   UtensilsCrossed,
   Leaf,
 } from "lucide-react";
@@ -115,8 +114,6 @@ interface AIWaiterChatProps {
   onViewCart: () => void;
   openedFrom?: "landing" | "cart";
   tableNumber?: string;
-  guestData: { adults: number; children: number; senior: number } | null;
-  onOpenGuestDialog?: () => void;
   sendMessage: (text: string) => void;
   messagesAI: ChatMessageAI[];
   isTyping: boolean;
@@ -132,50 +129,13 @@ export function AIWaiterChat({
   onViewCart,
   openedFrom = "landing",
   tableNumber,
-  guestData,
-  onOpenGuestDialog,
   sendMessage,
   messagesAI,
   isTyping,
   setIsTyping,
 }: AIWaiterChatProps) {
-  // Generate welcome message with guest information
+  // Generate welcome message
   const getWelcomeMessage = () => {
-    if (guestData) {
-      const totalGuests =
-        guestData.adults + guestData.children + guestData.senior;
-      const guestBreakdown = [
-        guestData.adults > 0
-          ? `${guestData.adults} adult${guestData.adults > 1 ? "s" : ""}`
-          : null,
-        guestData.children > 0
-          ? `${guestData.children} child${guestData.children > 1 ? "ren" : ""}`
-          : null,
-        guestData.senior > 0
-          ? `${guestData.senior} senior${guestData.senior > 1 ? "s" : ""}`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
-
-      return `Good evening! 🌟 Welcome to **Lumière Dorée**${
-        tableNumber ? `, Table #${tableNumber}` : ""
-      }. I see we have **${totalGuests} guest${
-        totalGuests > 1 ? "s" : ""
-      }** today (${guestBreakdown}) - wonderful!
-
-I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
-
-✨ **I can instantly help you:**
-• 🍽️ Order in seconds - just say "I want the Schnitzel"
-• 🎯 Get personalized recommendations
-• 🌱 Filter by dietary needs & allergies
-• 🍷 Suggest perfect wine pairings
-• 💬 Answer any questions about our menu
-
-What sounds delightful to you today?`;
-    }
-
     return `Good evening! 🌟 Welcome to **Lumière Dorée**${
       tableNumber ? `, Table #${tableNumber}` : ""
     }.
@@ -301,9 +261,9 @@ What sounds delightful to you today?`;
     };
   }, [isDragging, dragStartY]);
 
-  // Update welcome message when guest data is confirmed
+  // Update welcome message when messagesAI changes
   useEffect(() => {
-    if (guestData && !messagesAI.length) {
+    if (!messagesAI.length) {
       setMessages([
         {
           id: "1",
@@ -312,9 +272,7 @@ What sounds delightful to you today?`;
           timestamp: new Date(),
         },
       ]);
-    }
-
-    if (guestData && messagesAI.length) {
+    } else {
       setMessages([
         {
           id: "1",
@@ -337,7 +295,7 @@ What sounds delightful to you today?`;
         }),
       ]);
     }
-  }, [guestData, messagesAI]);
+  }, [messagesAI]);
 
   // Get context based on cart state
   const getContext = ():
@@ -662,18 +620,6 @@ What sounds delightful to you today?`;
           </div>
 
           <div className="flex items-center gap-2">
-            {guestData && (
-              <button
-                onClick={onOpenGuestDialog}
-                className="flex items-center gap-1.5 bg-[#4A3428] text-white px-2.5 py-1.5 rounded-lg shadow-md hover:bg-[#5A4438] active:scale-95 transition-all"
-              >
-                <Users className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span className="text-xs font-semibold">
-                  {guestData.adults + guestData.children + guestData.senior}
-                </span>
-              </button>
-            )}
-
             {cart.length > 0 && (
               <button
                 onClick={onViewCart}

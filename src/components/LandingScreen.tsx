@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { motion } from 'motion/react';
-import { Sparkles, Users, Baby, UserCheck, Plus, Minus } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { RestaurantLogo } from './RestaurantLogo';
 
 interface LandingScreenProps {
@@ -17,23 +17,6 @@ export function LandingScreen({
 	onEnter,
 	onOpenAI,
 }: LandingScreenProps) {
-	const [guestCounts, setGuestCounts] = useState({
-		adults: 2,
-		children: 0,
-		senior: 0,
-	});
-
-	const updateGuestCount = (
-		type: 'adults' | 'children' | 'senior',
-		delta: number,
-	) => {
-		setGuestCounts((prev) => {
-			const newValue = Math.max(0, prev[type] + delta);
-			// Ensure at least 1 adult
-			if (type === 'adults' && newValue === 0) return prev;
-			return { ...prev, [type]: newValue };
-		});
-	};
 
 	const translations = {
 		en: {
@@ -49,11 +32,6 @@ export function LandingScreen({
 			voiceOrder: 'Voice Order',
 			personalized: 'Personalized',
 			signature: "Don't miss our signature Le Chef's Golden Soufflé",
-			guestCount: 'Number of Guests',
-			adults: 'Adults',
-			children: 'Children',
-			senior: 'Senior',
-			totalGuests: 'Total Guests',
 		},
 		de: {
 			tagline: 'FINE DINING NEU GEDACHT',
@@ -69,11 +47,6 @@ export function LandingScreen({
 			personalized: 'Personalisiert',
 			signature:
 				"Verpassen Sie nicht unser Signature-Gericht Le Chef's Golden Soufflé",
-			guestCount: 'Anzahl der Gäste',
-			adults: 'Erwachsene',
-			children: 'Kinder',
-			senior: 'Senioren',
-			totalGuests: 'Gesamt Gäste',
 		},
 		zh: {
 			tagline: '重新定义精致餐饮',
@@ -88,11 +61,6 @@ export function LandingScreen({
 			voiceOrder: '语音点餐',
 			personalized: '个性化',
 			signature: "不要错过我们的招牌菜 Le Chef's Golden Soufflé",
-			guestCount: '客人数量',
-			adults: '成人',
-			children: '儿童',
-			senior: '老人',
-			totalGuests: '总客人数',
 		},
 		vi: {
 			tagline: 'ẨM THỰC CAO CẤP TÁI HIỆN',
@@ -108,11 +76,6 @@ export function LandingScreen({
 			personalized: 'Cá Nhân Hóa',
 			signature:
 				"Đừng bỏ lỡ món đặc trưng Le Chef's Golden Soufflé của chúng tôi",
-			guestCount: 'Số Lượng Khách',
-			adults: 'Người Lớn',
-			children: 'Trẻ Em',
-			senior: 'Người Cao Tuổi',
-			totalGuests: 'Tổng Khách',
 		},
 	};
 
@@ -164,120 +127,12 @@ export function LandingScreen({
 						</div>
 					</motion.div>
 
-					{/* Guest Count Selector */}
-					<motion.div
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						transition={{ delay: 0.35 }}
-						className="bg-white rounded-2xl p-5 border-2 border-[#C4941D]/20 shadow-sm"
-					>
-						<div className="flex items-center justify-between mb-4">
-							<h3 className="text-[#3E2723] flex items-center gap-2">
-								<Users className="w-5 h-5 text-[#C4941D]" />
-								{t.guestCount}
-							</h3>
-							<div className="bg-[#C4941D]/10 px-3 py-1 rounded-full">
-								<span className="text-xs text-[#C4941D]">
-									{t.totalGuests}:{' '}
-									{guestCounts.adults +
-										guestCounts.children +
-										guestCounts.senior}
-								</span>
-							</div>
-						</div>
-
-						<div className="space-y-3">
-							{/* Adults */}
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-3">
-									<div className="w-10 h-10 rounded-full bg-[#C4941D]/10 flex items-center justify-center">
-										<UserCheck className="w-5 h-5 text-[#C4941D]" />
-									</div>
-									<span className="text-sm text-[#3E2723]">{t.adults}</span>
-								</div>
-								<div className="flex items-center gap-3">
-									<button
-										onClick={() => updateGuestCount('adults', -1)}
-										disabled={guestCounts.adults <= 1}
-										className="w-8 h-8 rounded-full border-2 border-[#C4941D]/30 flex items-center justify-center hover:bg-[#C4941D]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-									>
-										<Minus className="w-4 h-4 text-[#C4941D]" />
-									</button>
-									<span className="w-8 text-center text-[#3E2723]">
-										{guestCounts.adults}
-									</span>
-									<button
-										onClick={() => updateGuestCount('adults', 1)}
-										className="w-8 h-8 rounded-full border-2 border-[#C4941D]/30 flex items-center justify-center hover:bg-[#C4941D]/10 transition-all"
-									>
-										<Plus className="w-4 h-4 text-[#C4941D]" />
-									</button>
-								</div>
-							</div>
-
-							{/* Children */}
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-3">
-									<div className="w-10 h-10 rounded-full bg-[#C4941D]/10 flex items-center justify-center">
-										<Baby className="w-5 h-5 text-[#C4941D]" />
-									</div>
-									<span className="text-sm text-[#3E2723]">{t.children}</span>
-								</div>
-								<div className="flex items-center gap-3">
-									<button
-										onClick={() => updateGuestCount('children', -1)}
-										disabled={guestCounts.children <= 0}
-										className="w-8 h-8 rounded-full border-2 border-[#C4941D]/30 flex items-center justify-center hover:bg-[#C4941D]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-									>
-										<Minus className="w-4 h-4 text-[#C4941D]" />
-									</button>
-									<span className="w-8 text-center text-[#3E2723]">
-										{guestCounts.children}
-									</span>
-									<button
-										onClick={() => updateGuestCount('children', 1)}
-										className="w-8 h-8 rounded-full border-2 border-[#C4941D]/30 flex items-center justify-center hover:bg-[#C4941D]/10 transition-all"
-									>
-										<Plus className="w-4 h-4 text-[#C4941D]" />
-									</button>
-								</div>
-							</div>
-
-							{/* Senior */}
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-3">
-									<div className="w-10 h-10 rounded-full bg-[#C4941D]/10 flex items-center justify-center text-xl">
-										👴
-									</div>
-									<span className="text-sm text-[#3E2723]">{t.senior}</span>
-								</div>
-								<div className="flex items-center gap-3">
-									<button
-										onClick={() => updateGuestCount('senior', -1)}
-										disabled={guestCounts.senior <= 0}
-										className="w-8 h-8 rounded-full border-2 border-[#C4941D]/30 flex items-center justify-center hover:bg-[#C4941D]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-									>
-										<Minus className="w-4 h-4 text-[#C4941D]" />
-									</button>
-									<span className="w-8 text-center text-[#3E2723]">
-										{guestCounts.senior}
-									</span>
-									<button
-										onClick={() => updateGuestCount('senior', 1)}
-										className="w-8 h-8 rounded-full border-2 border-[#C4941D]/30 flex items-center justify-center hover:bg-[#C4941D]/10 transition-all"
-									>
-										<Plus className="w-4 h-4 text-[#C4941D]" />
-									</button>
-								</div>
-							</div>
-						</div>
-					</motion.div>
 
 					{/* Action Button */}
 					<motion.div
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
-						transition={{ delay: 0.4 }}
+						transition={{ delay: 0.35 }}
 					>
 						<Button
 							onClick={onOpenAI}
