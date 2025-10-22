@@ -153,17 +153,7 @@ export default function App() {
     : 0;
   const finalTotal = Math.max(0, cartTotal - discountAmount);
 
-  const { messages, sendMessage, partitionOrdinal } = useDualSocket(user);
-
-  useEffect(() => {
-    if (partitionOrdinal) {
-      console.log("Partition ordinal ready:", partitionOrdinal);
-    }
-  }, [partitionOrdinal]);
-
-  useEffect(() => {
-    console.log("messages", messages);
-  }, [messages]);
+  const { messages, sendMessage, typing, setTyping } = useDualSocket(user);
 
   return (
     <div className="min-h-screen">
@@ -180,6 +170,8 @@ export default function App() {
           onOpenGuestDialog={() => setGuestDialogOpen(true)}
           sendMessage={sendMessage}
           messagesAI={messages}
+          isTyping={typing}
+          setIsTyping={setTyping}
         />
       )}
 

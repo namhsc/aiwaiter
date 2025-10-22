@@ -36,7 +36,18 @@ export interface ChatMessageAI {
     ai_id: string;
     cost: number;
   };
-  content: string;
+  content: {
+    id: string;
+    conversation_id: string;
+    author: string;
+    content: string;
+    agent_id: boolean;
+    created_at: string;
+    creator: boolean;
+    message_state: boolean;
+    ai_id: string;
+    cost: number;
+  };
 }
 
 export interface IncomingMessage {
@@ -65,6 +76,7 @@ export default function useDualSocket(user: UserInfo | null) {
   const [messages, setMessages] = useState<ChatMessageAI[]>([]);
   const socketCs = useRef<Socket | null>(null);
   const socketMessage = useRef<Socket | null>(null);
+  const [typing, setTyping] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -89,7 +101,8 @@ export default function useDualSocket(user: UserInfo | null) {
 
     // 6️⃣ Lắng nghe message
     socketMessage.current.on("message", (msg: IncomingMessage) => {
-      console.log("meg socketMessage", msg);
+      //   console.log("meg socketMessage", msg);
+      handleCheckDone(msg);
     });
 
     // 3️⃣ Khi CS socket connect
@@ -117,22 +130,27 @@ export default function useDualSocket(user: UserInfo | null) {
     };
   }, [conversationId]);
 
+  const handleCheckDone = (dataMess: IncomingMessage) => {
+    if (!dataMess) return;
+    const content = dataMess?.content;
+    const conversation_id = content?.conversation_id;
+    const innerContent = content?.content;
+
+    const isDone = innerContent?.content === "DONE";
+
+    if (conversation_id === conversationId && isDone) {
+      setTyping(false);
+    }
+  };
+
   // 🧩 Hàm xử lý tin nhắn nhận được
   const handleIncomingMessage = (msg: IncomingMessage) => {
     const { type, content } = msg;
-    console.log("msg handleIncomingMessage", content);
-    console.log("msg type", type);
+
     if (!type) return;
     const { conversation_id } = content;
 
     switch (type) {
-      case "NEW_MESSAGE_CS_CHAT":
-        if (content?.content?.includes("DONE")) {
-          console.log("✅ AI finished response");
-          return;
-        }
-        break;
-
       case "NEW_MESSAGE_CS_CHAT_PAUSE":
         console.log("⏸️ AI paused response");
         break;
@@ -170,8 +188,6 @@ export default function useDualSocket(user: UserInfo | null) {
       partition_ordinal: partitionOrdinal,
     };
 
-    console.log("📤 Sending message:", message_chat);
-    console.log("socketCs.current", socketCs.current);
     socketCs.current.emit("query_chat_message", message_chat, {
       conversationId,
     });
@@ -182,5 +198,7 @@ export default function useDualSocket(user: UserInfo | null) {
     sendMessage,
     partitionOrdinal,
     conversationId,
+    typing,
+    setTyping,
   };
 }

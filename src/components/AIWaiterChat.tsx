@@ -56,6 +56,8 @@ interface AIWaiterChatProps {
   onOpenGuestDialog?: () => void;
   sendMessage: (text: string) => void;
   messagesAI: ChatMessageAI[];
+  isTyping: boolean;
+  setIsTyping: (isDone: boolean) => void;
 }
 
 export function AIWaiterChat({
@@ -69,6 +71,8 @@ export function AIWaiterChat({
   onOpenGuestDialog,
   sendMessage,
   messagesAI,
+  isTyping,
+  setIsTyping,
 }: AIWaiterChatProps) {
   // Generate welcome message with guest information
   const getWelcomeMessage = () => {
@@ -125,7 +129,6 @@ What sounds delightful to you today?`;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [suggestedItems, setSuggestedItems] = useState<MenuItem[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -185,7 +188,6 @@ What sounds delightful to you today?`;
           };
         }),
       ]);
-      setIsTyping(false);
     }
   }, [guestData, messagesAI]);
 
