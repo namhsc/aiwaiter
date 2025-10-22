@@ -20,7 +20,16 @@ export function RestaurantLogo({
 		: {};
 
 	return (
-		<LogoWrapper className={className} {...animationProps}>
+		<LogoWrapper
+			className={className}
+			{...(animate
+				? {
+						initial: { scale: 0, rotate: -180 },
+						animate: { scale: 1, rotate: 0 },
+						transition: { type: "spring" as const, stiffness: 200, damping: 15 },
+				  }
+				: {})}
+		>
 			<svg
 				viewBox="0 0 120 120"
 				fill="none"

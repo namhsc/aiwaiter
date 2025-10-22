@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, MenuItem } from "../types/menu";
 import { generateAIResponse, quickReplies } from "../utils/aiResponses";
+import { menuData } from "../data/menuData";
 import {
   getPaymentInstructions,
   getCheckoutResponseText,
@@ -30,6 +31,7 @@ import {
   ChevronDown,
   Users,
   UtensilsCrossed,
+  Leaf,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
@@ -44,6 +46,7 @@ import {
 } from "./ui/dialog";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
 import { ChatMessageAI } from "../hook/useDualSocket";
+import React from "react";
 
 interface AIWaiterChatProps {
   onBack: () => void;
@@ -142,16 +145,69 @@ What sounds delightful to you today?`;
   const [inputHighlight, setInputHighlight] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [showMenuOverlay, setShowMenuOverlay] = useState(false);
+  const [menuDragY, setMenuDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartY, setDragStartY] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const menuOverlayRef = useRef<HTMLDivElement>(null);
 
   // Reset used actions when chat is reopened to ensure Quick Actions are always visible
   useEffect(() => {
     setUsedActions(new Set());
     setShowQuickActions(true);
   }, [openedFrom]);
+
+  // Add global event listeners for drag
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const deltaY = e.clientY - dragStartY;
+        if (deltaY > 0) {
+          setMenuDragY(deltaY);
+        }
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        handleMenuDragEnd();
+      }
+    };
+
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+        const deltaY = e.touches[0].clientY - dragStartY;
+        if (deltaY > 0) {
+          setMenuDragY(deltaY);
+        }
+      }
+    };
+
+    const handleGlobalTouchEnd = () => {
+      if (isDragging) {
+        handleMenuDragEnd();
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+      document.addEventListener('touchend', handleGlobalTouchEnd);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('touchmove', handleGlobalTouchMove);
+      document.removeEventListener('touchend', handleGlobalTouchEnd);
+    };
+  }, [isDragging, dragStartY]);
 
   // Update welcome message when guest data is confirmed
   useEffect(() => {
@@ -436,6 +492,43 @@ What sounds delightful to you today?`;
     handleSendMessage(paymentMessage);
   };
 
+  // Handle menu drag gestures
+  const handleMenuDragStart = (event: React.MouseEvent | React.TouchEvent) => {
+    event.preventDefault();
+    setIsDragging(true);
+    const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
+    setDragStartY(clientY);
+    setMenuDragY(0);
+  };
+
+  const handleMenuDragMove = (event: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging) return;
+    event.preventDefault();
+    
+    const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
+    const deltaY = clientY - dragStartY;
+    
+    // Only allow dragging down
+    if (deltaY > 0) {
+      setMenuDragY(deltaY);
+    }
+  };
+
+  const handleMenuDragEnd = () => {
+    if (!isDragging) return;
+    
+    setIsDragging(false);
+    
+    // If dragged down more than 100px, close the menu
+    if (menuDragY > 100) {
+      setShowMenuOverlay(false);
+      setShowQuickActions(true);
+    }
+    
+    setMenuDragY(0);
+    setDragStartY(0);
+  };
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-[#FFF9F0] via-[#FFF9F0] to-[#FFF4E0] flex justify-center z-50">
       {/* Mobile-First Container with Max Width */}
@@ -492,6 +585,7 @@ What sounds delightful to you today?`;
         {/* Show Quick Actions Button */}
         <AnimatePresence>
           {!showQuickActions &&
+            !showMenuOverlay &&
             (getSpecialNotes().length > 0 ||
               getRecommendations().length > 0) && (
               <motion.div
@@ -635,7 +729,7 @@ What sounds delightful to you today?`;
         {/* Messages */}
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+          className="flex-1 overflow-y-auto px-4 py-6 space-y-4 relative"
         >
           <AnimatePresence>
             {messages.map((message, index) => (
@@ -794,11 +888,136 @@ What sounds delightful to you today?`;
           )}
 
           <div ref={messagesEndRef} />
+
+          {/* Menu Overlay - Positioned over messages area only */}
+          <AnimatePresence>
+            {showMenuOverlay && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 bg-black/20 z-40"
+                onClick={() => {
+                  setShowMenuOverlay(false);
+                  setShowQuickActions(true);
+                }}
+              >
+                  <motion.div
+                    ref={menuOverlayRef}
+                    initial={{ y: "100%" }}
+                    animate={{ y: isDragging ? menuDragY : 0 }}
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="absolute top-0 left-0 right-0 bottom-0 bg-white rounded-t-3xl shadow-2xl overflow-hidden touch-pan-y flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                  {/* Drag Handle */}
+                  <div 
+                    className="flex justify-center py-3 border-b border-[#C4941D]/10 cursor-grab active:cursor-grabbing flex-shrink-0"
+                    onMouseDown={handleMenuDragStart}
+                    onTouchStart={handleMenuDragStart}
+                  >
+                    <div className="w-12 h-1 bg-[#C4941D]/30 rounded-full" />
+                  </div>
+
+                  {/* Menu Content */}
+                  <div className="flex-1 px-4 py-4 overflow-y-auto scroll-smooth">
+                    <div className="space-y-4 pb-4">
+                      {menuData.map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="bg-white rounded-2xl shadow-sm overflow-hidden border border-[#C4941D]/10 cursor-pointer active:scale-[0.98] transition-transform"
+                          onClick={() => {
+                            setSelectedDish(item);
+                            setDishDialogOpen(true);
+                          }}
+                        >
+                          <div className="flex gap-4 p-4">
+                            {/* Image */}
+                            <div className="relative flex-shrink-0">
+                              <ImageWithFallback
+                                src={item.image}
+                                alt={item.name}
+                                className="w-20 h-20 rounded-xl object-cover"
+                              />
+                              {item.popular && (
+                                <Badge className="absolute -top-1 -right-1 bg-[#C4941D] text-white border-0 text-xs">
+                                  ⭐
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <h3 className="text-[#3E2723] line-clamp-1 text-sm font-medium">
+                                  {item.name}
+                                </h3>
+                                <div className="text-[#C4941D] shrink-0 font-semibold">
+                                  €{item.price.toFixed(2)}
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-[#8B7355] line-clamp-2 mb-2">
+                                {item.description}
+                              </p>
+
+                              {/* Badges */}
+                              <div className="flex flex-wrap items-center gap-1 mb-2">
+                                {item.vegetarian && (
+                                  <div className="flex items-center gap-1 px-2 py-0.5 bg-[#E8F5E9] rounded-md border border-[#6B8E23]/30">
+                                    <Leaf className="w-2.5 h-2.5 text-[#6B8E23]" />
+                                    <span className="text-xs text-[#6B8E23]">Veggie</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Add Button */}
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddItemToCart(item);
+                                }}
+                                size="sm"
+                                className="w-full bg-[#C4941D] text-white rounded-lg h-8 text-xs"
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Add to Cart
+                              </Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Input Bar - Enhanced */}
         <div className="bg-white border-t border-[#C4941D]/20 px-4 py-4 shadow-2xl shrink-0">
           <div className="max-w-2xl mx-auto flex gap-2 items-center">
+            {/* Menu Icon */}
+            <Button
+              onClick={() => {
+                setShowMenuOverlay(!showMenuOverlay);
+                if (!showMenuOverlay) {
+                  setShowQuickActions(false);
+                }
+              }}
+              variant="outline"
+              size="icon"
+              className="rounded-full w-12 h-12 shrink-0 shadow-md border-[#C4941D]/30 hover:bg-[#C4941D]/10"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+
             <div ref={inputContainerRef} className="flex-1 relative">
               <motion.div
                 animate={
@@ -943,6 +1162,7 @@ What sounds delightful to you today?`;
             />
           </DialogContent>
         </Dialog>
+
       </div>
     </div>
   );
