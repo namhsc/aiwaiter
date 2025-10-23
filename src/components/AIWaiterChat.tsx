@@ -33,6 +33,7 @@ import {
   ChevronDown,
   UtensilsCrossed,
   Leaf,
+  User,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
@@ -171,6 +172,13 @@ What sounds delightful to you today?`;
   const [dragStartY, setDragStartY] = useState(0);
   const [activeMenuTab, setActiveMenuTab] = useState<string>("starter");
   
+  // Guest count state
+  const [guestCount, setGuestCount] = useState({
+    adults: 1,
+    children: 0,
+    seniors: 0
+  });
+  
   // Helper function to get menu items by category
   const getMenuItemsByCategory = (category: string) => {
     return menuData.filter(item => item.category === category);
@@ -180,6 +188,18 @@ What sounds delightful to you today?`;
   const getItemQuantity = (itemId: string) => {
     const cartItem = cart.find(item => item.id === itemId);
     return cartItem ? cartItem.quantity : 0;
+  };
+
+  // Helper functions for guest count management
+  const updateGuestCount = (type: 'adults' | 'children' | 'seniors', delta: number) => {
+    setGuestCount(prev => ({
+      ...prev,
+      [type]: Math.max(0, prev[type] + delta)
+    }));
+  };
+
+  const getTotalGuests = () => {
+    return guestCount.adults + guestCount.children + guestCount.seniors;
   };
 
   // Helper functions for quantity control
@@ -712,6 +732,112 @@ What sounds delightful to you today?`;
               >
                 <div className="space-y-3">
                   <div className="max-w-2xl mx-auto">
+                    {/* Guest Count Selector */}
+                    <motion.div
+                      initial={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                         <div className="flex items-center gap-2">
+                           <User className="w-3.5 h-3.5 text-[#8B7355]" />
+                           <span className="text-xs text-[#8B7355]">
+                             Number of Guests
+                           </span>
+                         </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-[#8B7355] font-bold">Total:</span>
+                          <span className="text-sm font-bold text-[#C4941D] font-bold">
+                            {getTotalGuests()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="bg-white/60 rounded-lg px-3 py-2">
+                        <div className="flex items-center justify-between gap-4">
+                          {/* Adults */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-[#8B7355] min-w-[50px]">Adults:</span>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                onClick={() => updateGuestCount('adults', -1)}
+                                variant="outline"
+                                size="sm"
+                                className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
+                                disabled={guestCount.adults <= 0}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="text-sm font-semibold text-[#3E2723] min-w-[20px] text-center">
+                                {guestCount.adults}
+                              </span>
+                              <Button
+                                onClick={() => updateGuestCount('adults', 1)}
+                                variant="outline"
+                                size="sm"
+                                className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Children */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-[#8B7355] min-w-[50px]">Children:</span>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                onClick={() => updateGuestCount('children', -1)}
+                                variant="outline"
+                                size="sm"
+                                className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
+                                disabled={guestCount.children <= 0}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="text-sm font-semibold text-[#3E2723] min-w-[20px] text-center">
+                                {guestCount.children}
+                              </span>
+                              <Button
+                                onClick={() => updateGuestCount('children', 1)}
+                                variant="outline"
+                                size="sm"
+                                className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Seniors */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-[#8B7355] min-w-[50px]">Seniors:</span>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                onClick={() => updateGuestCount('seniors', -1)}
+                                variant="outline"
+                                size="sm"
+                                className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
+                                disabled={guestCount.seniors <= 0}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="text-sm font-semibold text-[#3E2723] min-w-[20px] text-center">
+                                {guestCount.seniors}
+                              </span>
+                              <Button
+                                onClick={() => updateGuestCount('seniors', 1)}
+                                variant="outline"
+                                size="sm"
+                                className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+
                     {/* Special Note Actions */}
                     {getSpecialNotes().length > 0 && (
                       <motion.div
