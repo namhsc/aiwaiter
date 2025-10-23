@@ -202,6 +202,20 @@ What sounds delightful to you today?`;
     return guestCount.adults + guestCount.children + guestCount.seniors;
   };
 
+  const getGuestSummary = () => {
+    const parts = [];
+    if (guestCount.adults > 0) {
+      parts.push(`${guestCount.adults} adult${guestCount.adults !== 1 ? 's' : ''}`);
+    }
+    if (guestCount.children > 0) {
+      parts.push(`${guestCount.children} child${guestCount.children !== 1 ? 'ren' : ''}`);
+    }
+    if (guestCount.seniors > 0) {
+      parts.push(`${guestCount.seniors} senior${guestCount.seniors !== 1 ? 's' : ''}`);
+    }
+    return parts.join(', ');
+  };
+
   // Helper functions for quantity control
   const handleIncrementQuantity = (item: MenuItem) => {
     const currentQuantity = getItemQuantity(item.id);
@@ -730,7 +744,7 @@ What sounds delightful to you today?`;
                 }}
                 className="overflow-hidden px-4 py-3 bg-gradient-to-b from-white/80 to-white/50 backdrop-blur-sm border-b border-[#C4941D]/10 shrink-0"
               >
-                <div className="space-y-3">
+                <div className="">
                   <div className="max-w-2xl mx-auto">
                     {/* Guest Count Selector */}
                     <motion.div
@@ -738,26 +752,31 @@ What sounds delightful to you today?`;
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                         <div className="flex items-center gap-2">
-                           <User className="w-3.5 h-3.5 text-[#8B7355]" />
-                           <span className="text-xs text-[#8B7355]">
-                             Number of Guests
-                           </span>
-                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-[#8B7355] font-bold">Total:</span>
-                          <span className="text-sm font-bold text-[#C4941D] font-bold">
-                            {getTotalGuests()}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <User className="w-3.5 h-3.5 text-[#8B7355]" />
+                        <span className="text-xs text-[#8B7355]">
+                          Total: {getGuestSummary() || 'No guests selected'}
+                        </span>
                       </div>
-                      <div className="bg-white/60 rounded-lg px-3 py-2">
-                        <div className="flex items-center justify-between gap-4">
-                          {/* Adults */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-[#8B7355] min-w-[50px]">Adults:</span>
-                            <div className="flex items-center gap-2">
+                      <div className="bg-white/60 rounded-lg">
+                        <div className="">
+                          {/* Labels Row */}
+                          <div className="flex gap-2">
+                            <div className="flex-1 text-center">
+                              <span className="text-sm font-medium text-[#3E2723]">Adult</span>
+                            </div>
+                            <div className="flex-1 text-center">
+                              <span className="text-sm font-medium text-[#3E2723]">Child</span>
+                            </div>
+                            <div className="flex-1 text-center">
+                              <span className="text-sm font-medium text-[#3E2723]">Senior</span>
+                            </div>
+                          </div>
+
+                          {/* Controls Row */}
+                          <div className="flex gap-2">
+                            {/* Adult Controls */}
+                            <div className="flex-1 flex items-center justify-between bg-white rounded-lg p-2">
                               <Button
                                 onClick={() => updateGuestCount('adults', -1)}
                                 variant="outline"
@@ -765,26 +784,21 @@ What sounds delightful to you today?`;
                                 className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
                                 disabled={guestCount.adults <= 0}
                               >
-                                <Minus className="w-3 h-3" />
+                                <Minus className="w-4 h-4" />
                               </Button>
-                              <span className="text-sm font-semibold text-[#3E2723] min-w-[20px] text-center">
-                                {guestCount.adults}
-                              </span>
+                              <span className="text-lg font-semibold text-[#3E2723]">{guestCount.adults}</span>
                               <Button
                                 onClick={() => updateGuestCount('adults', 1)}
                                 variant="outline"
                                 size="sm"
                                 className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
                               >
-                                <Plus className="w-3 h-3" />
+                                <Plus className="w-4 h-4" />
                               </Button>
                             </div>
-                          </div>
 
-                          {/* Children */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-[#8B7355] min-w-[50px]">Children:</span>
-                            <div className="flex items-center gap-2">
+                            {/* Child Controls */}
+                            <div className="flex-1 flex items-center justify-between bg-white rounded-lg p-2">
                               <Button
                                 onClick={() => updateGuestCount('children', -1)}
                                 variant="outline"
@@ -792,26 +806,21 @@ What sounds delightful to you today?`;
                                 className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
                                 disabled={guestCount.children <= 0}
                               >
-                                <Minus className="w-3 h-3" />
+                                <Minus className="w-4 h-4" />
                               </Button>
-                              <span className="text-sm font-semibold text-[#3E2723] min-w-[20px] text-center">
-                                {guestCount.children}
-                              </span>
+                              <span className="text-lg font-semibold text-[#3E2723]">{guestCount.children}</span>
                               <Button
                                 onClick={() => updateGuestCount('children', 1)}
                                 variant="outline"
                                 size="sm"
                                 className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
                               >
-                                <Plus className="w-3 h-3" />
+                                <Plus className="w-4 h-4" />
                               </Button>
                             </div>
-                          </div>
 
-                          {/* Seniors */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-[#8B7355] min-w-[50px]">Seniors:</span>
-                            <div className="flex items-center gap-2">
+                            {/* Senior Controls */}
+                            <div className="flex-1 flex items-center justify-between bg-white rounded-lg p-2">
                               <Button
                                 onClick={() => updateGuestCount('seniors', -1)}
                                 variant="outline"
@@ -819,18 +828,16 @@ What sounds delightful to you today?`;
                                 className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
                                 disabled={guestCount.seniors <= 0}
                               >
-                                <Minus className="w-3 h-3" />
+                                <Minus className="w-4 h-4" />
                               </Button>
-                              <span className="text-sm font-semibold text-[#3E2723] min-w-[20px] text-center">
-                                {guestCount.seniors}
-                              </span>
+                              <span className="text-lg font-semibold text-[#3E2723]">{guestCount.seniors}</span>
                               <Button
                                 onClick={() => updateGuestCount('seniors', 1)}
                                 variant="outline"
                                 size="sm"
                                 className="w-6 h-6 p-0 rounded-full border-[#C4941D]/30 hover:bg-[#C4941D]/10"
                               >
-                                <Plus className="w-3 h-3" />
+                                <Plus className="w-4 h-4" />
                               </Button>
                             </div>
                           </div>
@@ -1239,7 +1246,7 @@ What sounds delightful to you today?`;
                       <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-[#C4941D]/30 scrollbar-track-transparent">
                         {['starter', 'main', 'dessert', 'drinks'].map((category) => (
                           <TabsContent key={category} value={category} className="mt-0 h-full">
-                            <div className="space-y-3 pb-6 h-full">
+                            <div className="space-y-1 pb-6 h-full">
                               {getMenuItemsByCategory(category).map((item, index) => (
                                 <div
                                   key={item.id}
