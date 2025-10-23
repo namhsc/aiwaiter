@@ -282,15 +282,26 @@ What sounds delightful to you today?`;
         },
         ...messagesAI.map((itemMess: ChatMessageAI) => {
           const { data_reply } = itemMess;
+
           const inforCretor = JSON.parse(data_reply.author);
+
+          // Trích xuất suggestion IDs từ nội dung
+          const matches = data_reply.content.match(/\(([^)]+)\)/g) || [];
+          const suggestionIds = matches.map(m => m.slice(1, -1));
+          
+          // Tìm món ăn tương ứng với suggestion IDs
+          const suggestions = suggestionIds
+            .map(id => menuData.find(item => item.id === id))
+            .filter(Boolean) as MenuItem[];
 
           return {
             id: data_reply.id,
-            text: data_reply.content,
+            text: data_reply.content.replace(/\s*\([^)]*\)/g, ""),
             sender: (inforCretor.type === "user" ? "user" : "ai") as
               | "user"
               | "ai",
             timestamp: new Date(data_reply.created_at),
+            suggestions: suggestions.length > 0 ? suggestions : undefined,
           };
         }),
       ]);
@@ -608,10 +619,6 @@ What sounds delightful to you today?`;
               Lumière <span className="text-[#FFF9F0]">Dorée</span>
             </h1>
             <div className="flex items-center gap-2 text-xs text-white/90">
-              <Badge className="bg-white/20 text-white border-white/30 text-[10px] px-2 py-0.5">
-                <Sparkles className="w-3 h-3 mr-1" />
-                AI Waiter
-              </Badge>
               <div className="flex items-center gap-1">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
                 <span className="text-[10px]">Online</span>
@@ -620,10 +627,36 @@ What sounds delightful to you today?`;
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Menu/AI Waiter Button */}
+            {!showMenuOverlay ? (
+              <button
+                onClick={() => {
+                  setShowMenuOverlay(true);
+                  setShowQuickActions(false);
+                }}
+                className="flex items-center gap-1.5 bg-[#8B7355] text-white px-2.5 py-1.5 h-8 rounded-lg shadow-md hover:bg-[#6B5B47] active:scale-95 transition-all"
+              >
+                <UtensilsCrossed className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold">Menu</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setShowMenuOverlay(false);
+                  setShowQuickActions(true);
+                }}
+                className="flex items-center gap-1.5 bg-white text-[#8B7355] border border-white/30 px-2.5 py-1.5 h-8 rounded-lg shadow-md hover:bg-white/30 active:scale-95 transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#8B7355]" />
+                <span className="text-xs font-semibold text-[#8B7355]">AI Waiter</span>
+              </button>
+            )}
+            
+            {/* Cart Button */}
             {cart.length > 0 && (
               <button
                 onClick={onViewCart}
-                className="flex items-center gap-1.5 bg-white text-[#C4941D] px-2.5 py-1.5 rounded-lg shadow-md hover:bg-white/90 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 bg-white text-[#C4941D] px-2.5 py-1.5 h-8 rounded-lg shadow-md hover:bg-white/90 active:scale-95 transition-all"
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
                 <span className="text-xs font-semibold">
@@ -794,11 +827,6 @@ What sounds delightful to you today?`;
                   message.sender === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                {message.sender === "ai" && (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4941D] to-[#D4A52D] flex items-center justify-center text-white mr-2 shrink-0 mt-1 shadow-md">
-                    🤵
-                  </div>
-                )}
 
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
@@ -843,13 +871,105 @@ What sounds delightful to you today?`;
                       minute: "2-digit",
                     })}
                   </div>
+                  
+                   {/* Suggestions */}
+                   {message.suggestions && message.suggestions.length > 0 && (
+                     <div className="mt-3 space-y-2">
+                       <div className="text-xs font-medium text-[#8B7355] mb-2">
+                         💡 Suggested for you:
+                       </div>
+                       <div className="grid grid-cols-1 gap-2">
+                         {message.suggestions.map((item) => {
+                           const existingItem = cart.find(cartItem => cartItem.id === item.id);
+                           const quantity = existingItem ? existingItem.quantity : 0;
+                           
+                           return (
+                             <div
+                               key={item.id}
+                               className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                             >
+                                <ImageWithFallback
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-12 h-12 mr-2 rounded-lg object-cover"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 truncate">
+                                    {item.name}
+                                  </div>
+                                  <div className="text-xs text-gray-500 truncate">
+                                    {item.description}
+                                  </div>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <div className="text-sm font-semibold text-[#C4941D]">
+                                      ${item.price.toFixed(2)}
+                                    </div>
+                                    
+                                    {quantity > 0 ? (
+                                      <motion.div 
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <motion.button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDecrementQuantity(item.id);
+                                          }}
+                                          whileHover={{ scale: 1.1 }}
+                                          whileTap={{ scale: 0.9 }}
+                                          className="w-6 h-6 rounded-full bg-[#C4941D] text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center group"
+                                        >
+                                          <Minus className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                                        </motion.button>
+                                        
+                                        <motion.div 
+                                          className="flex items-center justify-center min-w-[24px] h-6"
+                                          initial={{ scale: 0 }}
+                                          animate={{ scale: 1 }}
+                                          transition={{ delay: 0.1 }}
+                                        >
+                                          <span className="text-sm font-semibold text-[#C4941D] text-center">
+                                            {quantity}
+                                          </span>
+                                        </motion.div>
+                                        
+                                        <motion.button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleIncrementQuantity(item);
+                                          }}
+                                          whileHover={{ scale: 1.1 }}
+                                          whileTap={{ scale: 0.9 }}
+                                          className="w-6 h-6 rounded-full bg-[#C4941D] text-white shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center group"
+                                        >
+                                          <Plus className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                                        </motion.button>
+                                      </motion.div>
+                                    ) : (
+                                      <motion.button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleIncrementQuantity(item);
+                                        }}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] text-white rounded-full px-3 py-1 text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1 group"
+                                      >
+                                        <Plus className="w-3 h-3 group-hover:rotate-90 transition-transform duration-200" />
+                                        <span>Add</span>
+                                      </motion.button>
+                                    )}
+                                  </div>
+                                </div>
+                             </div>
+                           );
+                         })}
+                       </div>
+                     </div>
+                   )}
                 </div>
 
-                {message.sender === "user" && (
-                  <div className="w-9 h-9 rounded-full bg-[#8B7355] flex items-center justify-center text-white ml-2 shrink-0 mt-1 shadow-md">
-                    👤
-                  </div>
-                )}
               </motion.div>
             ))}
           </AnimatePresence>
@@ -861,9 +981,6 @@ What sounds delightful to you today?`;
               animate={{ opacity: 1 }}
               className="flex justify-start"
             >
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C4941D] to-[#D4A52D] flex items-center justify-center text-white mr-2 shrink-0 shadow-md">
-                🤵
-              </div>
               <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-md border border-[#C4941D]/10">
                 <div className="flex gap-1.5">
                   <div
@@ -1127,20 +1244,6 @@ What sounds delightful to you today?`;
         {/* Input Bar - Enhanced */}
         <div className="bg-white border-t border-[#C4941D]/20 px-4 py-4 shadow-2xl shrink-0">
           <div className="max-w-2xl mx-auto flex gap-2 items-center">
-            {/* Menu Icon */}
-            <Button
-              onClick={() => {
-                setShowMenuOverlay(!showMenuOverlay);
-                if (!showMenuOverlay) {
-                  setShowQuickActions(false);
-                }
-              }}
-              variant="outline"
-              size="icon"
-              className="rounded-full w-12 h-12 shrink-0 shadow-md border-[#C4941D]/30 hover:bg-[#C4941D]/10"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
 
             <div ref={inputContainerRef} className="flex-1 relative">
               <motion.div

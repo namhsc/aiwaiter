@@ -33,6 +33,7 @@ export interface ChatMessage {
   text: string;
   sender: 'user' | 'ai';
   timestamp: Date;
+  suggestions?: MenuItem[];
 }
 
 export type DiscountType = 'percentage' | 'fixed' | 'free-item';
