@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AIWaiterChat } from "./components/AIWaiterChat";
 import { CartScreen } from "./components/CartScreen";
 import { PaymentScreen } from "./components/PaymentScreen";
-import { FeedbackScreen } from "./components/FeedbackScreen";
+// import { FeedbackScreen } from "./components/FeedbackScreen";
 import { MenuItem, CartItem, Voucher } from "./types/menu";
 import {
   findVoucher,
@@ -29,7 +29,6 @@ const detectLanguage = (): string => {
   // Default to English if language not supported
   return "en";
 };
-const user = { id: "123", name: "Boss Hiếu" };
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("ai-chat");
@@ -87,9 +86,9 @@ export default function App() {
     setCurrentScreen("feedback");
   };
 
-  const handleFeedbackComplete = () => {
-    setCurrentScreen("complete");
-  };
+  // const handleFeedbackComplete = () => {
+  //   setCurrentScreen("complete");
+  // };
 
   const handleStartOver = () => {
     setCart([]);
@@ -155,7 +154,6 @@ export default function App() {
     typing,
     setTyping,
     messMngtCard,
-    isConnectSocketCs,
     setDataSocketPlus,
   } = useDualSocket();
 
@@ -204,8 +202,6 @@ export default function App() {
   }, [messMngtCard]);
 
   useEffect(() => {
-    // if (isConnectSocketCs) {
-
     setDataSocketPlus({
       guests: {
         ...guestCount,
@@ -217,7 +213,6 @@ export default function App() {
         quantity: item.quantity,
       })),
     });
-    // }
   }, [guestCount, cart]);
 
   return (
@@ -276,9 +271,9 @@ export default function App() {
         />
       )}
 
-      {currentScreen === "feedback" && (
+      {/* {currentScreen === "feedback" && (
         <FeedbackScreen onComplete={handleFeedbackComplete} />
-      )}
+      )} */}
 
       {currentScreen === "complete" && (
         <div className="min-h-screen bg-[#FFF9F0] flex items-center justify-center px-4">

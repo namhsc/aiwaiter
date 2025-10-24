@@ -26,18 +26,7 @@ export interface PartitionResponse {
 
 export interface ChatMessageAI {
   conversation_id: string;
-  data_reply: {
-    id: string;
-    conversation_id: string;
-    author: string;
-    content: string;
-    agent_id: boolean;
-    created_at: string;
-    creator: boolean;
-    message_state: boolean;
-    ai_id: string;
-    cost: number;
-  };
+
   content: {
     id: string;
     conversation_id: string;
@@ -47,8 +36,8 @@ export interface ChatMessageAI {
     created_at: string;
     creator: boolean;
     message_state: boolean;
-    ai_id: string;
-    cost: number;
+    ai_id?: string;
+    cost?: number;
   };
 }
 
@@ -75,26 +64,15 @@ export interface OutgoingMessage {
 // 🧠 Hook chính
 export default function useDualSocket() {
   const [partitionOrdinal, setPartitionOrdinal] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<string>("");
+  const [conversationId] = useState<string>(uuidv4());
   const [messages, setMessages] = useState<ChatMessageAI[]>([]);
   const socketCs = useRef<Socket | null>(null);
-  const [isConnectSocketCs, setIsConectSocketCs] = useState(false);
+  // const [isConnectSocketCs, setIsConectSocketCs] = useState(false);
   const socketMessage = useRef<Socket | null>(null);
   const [typing, setTyping] = useState(false);
   const stompClientRef = useRef<any>(null);
   const [messMngtCard, setMessMngtCard] = useState<any[]>([]);
   const [dataSocketPlus, setDataSocketPlus] = useState<any>({});
-
-  useEffect(() => {
-    // 🔍 Kiểm tra nếu đã có trong localStorage
-    let savedId = localStorage.getItem("conversationId");
-
-    if (!savedId) {
-      savedId = uuidv4();
-      localStorage.setItem("conversationId", savedId);
-    }
-    setConversationId(savedId);
-  }, []);
 
   useEffect(() => {
     const socket = new SockJS("http://123.30.149.66:8800/ws");
@@ -112,14 +90,25 @@ export default function useDualSocket() {
 
         client.subscribe("/topic/messages", (msg) => {
           console.log("📩 Nhận:", JSON.parse(msg.body));
-          setMessMngtCard((prev) => [JSON.parse(msg.body), ...prev]);
-        });
+          const dataMess = JSON.parse(msg.body);
 
-        // // gửi thử tin nhắn
-        // client.publish({
-        //   destination: "/app/send",
-        //   body: JSON.stringify({ sender: "Boss", content: "Hello Spring!" }),
-        // });
+          let inner = JSON.parse(dataMess.content);
+
+          inner = inner
+            .replace(/'/g, '"') // thay ' → "
+            .replace(/\bNone\b/g, "null"); // thay None → null
+          const parsed = JSON.parse(inner);
+          console.log("dataMess", dataMess);
+          console.log("parsed", parsed);
+
+          if (
+            parsed &&
+            parsed.conversation_id &&
+            parsed.conversation_id === conversationId
+          ) {
+            setMessMngtCard((prev) => [JSON.parse(msg.body), ...prev]);
+          }
+        });
       },
     });
 
@@ -150,20 +139,18 @@ export default function useDualSocket() {
 
     // 6️⃣ Lắng nghe message
     socketCs.current.on("message", (msg: IncomingMessage) => {
-      console.log("socketCs", msg);
-      handleIncomingMessage(msg);
+      // console.log("socketCs", msg);
+      // handleIncomingMessage(msg);
     });
 
     // 6️⃣ Lắng nghe message
     socketMessage.current.on("message", (msg: IncomingMessage) => {
-      console.log("socketMessage", msg);
       handleCheckDone(msg);
     });
 
     // 3️⃣ Khi CS socket connect
     socketCs.current.on("connect", () => {
       console.log("✅ Connected to CS Socket");
-      setIsConectSocketCs(true);
       socketCs.current?.emit("join_room_conversation", {
         prevConversationId: null,
         conversationId,
@@ -188,41 +175,67 @@ export default function useDualSocket() {
 
   const handleCheckDone = (dataMess: IncomingMessage) => {
     if (!dataMess) return;
-    const content = dataMess?.content;
-    const conversation_id = content?.conversation_id;
-    const innerContent = content?.content;
+    const { type, content } = dataMess;
 
-    const isDone = innerContent?.content === "DONE";
-
-    if (conversation_id === conversationId && isDone) {
-      setTyping(false);
-    }
-  };
-
-  // 🧩 Hàm xử lý tin nhắn nhận được
-  const handleIncomingMessage = (msg: IncomingMessage) => {
-    const { type, content } = msg;
-    console.log("msg", msg);
-    if (!msg) return;
     if (!type || !content) return;
     const { conversation_id } = content;
+    const innerContent = content?.content;
+    const textChunk = innerContent?.content;
+    const isDone = textChunk === "DONE";
+
+    if (conversation_id !== conversationId) return;
 
     switch (type) {
       case "NEW_MESSAGE_CS_CHAT_PAUSE":
         console.log("⏸️ AI paused response");
         break;
 
-      case "message/new_for_query_chat":
-        if (conversation_id === conversationId) {
-          setMessages((prev) => [...prev, content]);
+      case "message/new_for_cs_chat":
+        if (isDone) {
+          setTyping(false);
+          return;
         }
         break;
 
+      case "message/full_message":
+        if (conversation_id === conversationId) {
+          setMessages((prev) => [
+            ...prev,
+            { ...content, content: { ...content.content, id: uuidv4() } },
+          ]);
+        }
+        return;
+
       default:
-        console.log("⚙️ Unknown message type:", msg);
+        // console.log("⚙️ Unknown message type:", dataMess);
         break;
     }
   };
+
+  // 🧩 Hàm xử lý tin nhắn nhận được
+  // const handleIncomingMessage = (msg: IncomingMessage) => {
+  //   const { type, content } = msg;
+  //   if (!msg) return;
+  //   if (!type || !content) return;
+  //   const { conversation_id } = content;
+
+  //   switch (type) {
+  //     case "NEW_MESSAGE_CS_CHAT_PAUSE":
+  //       console.log("⏸️ AI paused response");
+  //       break;
+
+  //     case "message/new_for_cs_chat":
+  //       console.log("content", content);
+  //       if (conversation_id === conversationId) {
+  //         setMessages((prev) => [...prev, content]);
+  //       }
+  //       break;
+
+  //     default:
+  //       console.log("⚙️ Unknown message type:", msg);
+  //       break;
+  //   }
+  // };
 
   // 💬 Gửi tin nhắn đến AI
   const sendMessage = (text: string) => {
@@ -246,6 +259,20 @@ export default function useDualSocket() {
       partition_ordinal: partitionOrdinal,
     };
 
+    const content: ChatMessageAI = {
+      conversation_id: conversationId,
+      content: {
+        id: uuidv4(),
+        conversation_id: conversationId,
+        author: '{"type": "user", "need_human": false}',
+        content: text,
+        agent_id: false,
+        created_at: `${new Date()}`,
+        creator: false,
+        message_state: false,
+      },
+    };
+    setMessages((prev) => [...prev, content]);
     socketCs.current.emit("query_chat_message", message_chat, {
       conversationId,
     });
@@ -259,7 +286,7 @@ export default function useDualSocket() {
     typing,
     setTyping,
     messMngtCard,
-    isConnectSocketCs,
+    // isConnectSocketCs,
     setDataSocketPlus,
   };
 }
