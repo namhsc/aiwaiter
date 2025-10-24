@@ -61,6 +61,7 @@ export interface OutgoingMessage {
   author: {
     type: "user";
     data_info: string | null;
+    user_info: any;
   };
   content: string;
   interactive: boolean;
@@ -236,6 +237,7 @@ export default function useDualSocket() {
       author: {
         type: "user",
         data_info: null,
+        user_info: { ...dataSocketPlus },
       },
       content: text,
       interactive: false,
@@ -244,7 +246,6 @@ export default function useDualSocket() {
       debug: false,
       preview: false,
       partition_ordinal: partitionOrdinal,
-      ...dataSocketPlus,
     };
 
     socketCs.current.emit("query_chat_message", message_chat, {

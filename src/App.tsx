@@ -204,21 +204,21 @@ export default function App() {
   }, [messMngtCard]);
 
   useEffect(() => {
-    if (isConnectSocketCs) {
-      // console.log("guestCount", guestCount);
-      // console.log("cart", cart);
-      setDataSocketPlus({
-        guests: {
-          ...guestCount,
-          total: guestCount.adults + guestCount.children + guestCount.seniors,
-        },
-        cart: cart.map((item) => ({
-          id_dish: item.id,
-          name: item.name,
-          quantity: item.quantity,
-        })),
-      });
-    }
+    // if (isConnectSocketCs) {
+    console.log("guestCount", guestCount);
+    console.log("cart", cart);
+    setDataSocketPlus({
+      guests: {
+        ...guestCount,
+        total: guestCount.adults + guestCount.children + guestCount.seniors,
+      },
+      cart: cart.map((item) => ({
+        id_dish: item.id,
+        name: item.name,
+        quantity: item.quantity,
+      })),
+    });
+    // }
   }, [guestCount, cart]);
 
   return (
