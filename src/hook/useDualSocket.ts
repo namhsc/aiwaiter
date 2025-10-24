@@ -101,7 +101,7 @@ export default function useDualSocket() {
   }, []);
 
   useEffect(() => {
-    const socket = new SockJS("http://123.30.149.66:8800/ws");
+    const socket = new SockJS("https://123.30.149.66:8800/ws");
     const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
