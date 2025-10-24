@@ -161,9 +161,13 @@ export default function App() {
 
   useEffect(() => {
     if (!messMngtCard.length) return;
-    console.log("messMngtCard", messMngtCard);
     const messCardNew = messMngtCard[0];
-
+    // const messCardNew = {
+    //   sender: "System-add-card",
+    //   content:
+    //     "\"{'num_people': 3, 'selected_dishes': [{'id_dish': 'st1', 'quantity': 2}, {'id_dish': 'mn4', 'quantity': 2}, {'id_dish': 'st2', 'quantity': 1}, {'id_dish': 'ds1', 'quantity': 1}], 'notes': None}\"",
+    // };
+    console.log("messCardNew", messCardNew);
     const { sender, content } = messCardNew;
 
     switch (sender) {
@@ -175,20 +179,21 @@ export default function App() {
           .replace(/\bNone\b/g, "null"); // thay None → null
 
         const parsed = JSON.parse(inner);
-
         const listDish = parsed.selected_dishes;
         const listId = listDish.map((item: any) => item.id_dish);
         const listDishAddCard = menuData.filter((item) =>
-          item.id.includes(listId)
+          listId.includes(item.id)
         );
-
-        listDishAddCard.map((item) => {
-          const findQuality = listDish.find(
-            (dish: any) => dish.id_dish === item.id
-          );
-
-          handleIncrementQuantity(item, findQuality.quantity || 1);
-        });
+        console.log("listDishAddCard", listDishAddCard);
+        setCart(
+          listDishAddCard.map((item) => {
+            const findQuality = listDish.find(
+              (dish: any) => dish.id_dish === item.id
+            );
+            console.log("findQuality", findQuality);
+            return { ...item, quantity: findQuality.quantity || 1 };
+          })
+        );
 
         break;
 
@@ -200,8 +205,8 @@ export default function App() {
 
   useEffect(() => {
     if (isConnectSocketCs) {
-      console.log("guestCount", guestCount);
-      console.log("cart", cart);
+      // console.log("guestCount", guestCount);
+      // console.log("cart", cart);
       setDataSocketPlus({
         guests: {
           ...guestCount,

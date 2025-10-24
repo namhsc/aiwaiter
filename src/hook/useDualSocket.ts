@@ -101,7 +101,7 @@ export default function useDualSocket() {
   }, []);
 
   useEffect(() => {
-    const socket = new SockJS("https://123.30.149.66:8800/ws");
+    const socket = new SockJS("http://123.30.149.66:8800/ws");
     const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
@@ -111,6 +111,7 @@ export default function useDualSocket() {
         //   sender: "System-add-card",
         //   content: `"{'num_people': 1, 'selected_dishes': [{'id_dish': 'mn5', 'quantity': 3}], 'notes': None}"`,
         // };
+        // console.log("mesTMP", mesTMP);
         // setMessMngtCard([mesTMP]);
 
         client.subscribe("/topic/messages", (msg) => {
@@ -203,8 +204,8 @@ export default function useDualSocket() {
   // 🧩 Hàm xử lý tin nhắn nhận được
   const handleIncomingMessage = (msg: IncomingMessage) => {
     const { type, content } = msg;
-
-    if (!type) return;
+    if (!msg) return;
+    if (!type || !content) return;
     const { conversation_id } = content;
 
     switch (type) {
