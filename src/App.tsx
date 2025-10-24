@@ -40,6 +40,11 @@ export default function App() {
   const [chatOpenedFrom, setChatOpenedFrom] = useState<"landing" | "cart">(
     "landing"
   );
+  const [guestCount, setGuestCount] = useState({
+    adults: 1,
+    children: 0,
+    seniors: 0,
+  });
 
   const addToCart = (item: MenuItem, numberItem: number = 1) => {
     setCart((prevCart) => {
@@ -144,8 +149,15 @@ export default function App() {
 
   const finalTotal = Math.max(0, cartTotal - discountAmount);
 
-  const { messages, sendMessage, typing, setTyping, messMngtCard } =
-    useDualSocket();
+  const {
+    messages,
+    sendMessage,
+    typing,
+    setTyping,
+    messMngtCard,
+    isConnectSocketCs,
+    setDataSocketPlus,
+  } = useDualSocket();
 
   useEffect(() => {
     if (!messMngtCard.length) return;
@@ -186,6 +198,24 @@ export default function App() {
     }
   }, [messMngtCard]);
 
+  useEffect(() => {
+    if (isConnectSocketCs) {
+      console.log("guestCount", guestCount);
+      console.log("cart", cart);
+      setDataSocketPlus({
+        guests: {
+          ...guestCount,
+          total: guestCount.adults + guestCount.children + guestCount.seniors,
+        },
+        cart: cart.map((item) => ({
+          id_dish: item.id,
+          name: item.name,
+          quantity: item.quantity,
+        })),
+      });
+    }
+  }, [guestCount, cart]);
+
   return (
     <div className="min-h-screen">
       {/* Main Screens */}
@@ -205,6 +235,8 @@ export default function App() {
           setIsTyping={setTyping}
           getItemQuantity={getItemQuantity}
           handleIncrementQuantity={handleIncrementQuantity}
+          guestCount={guestCount}
+          setGuestCount={setGuestCount}
         />
       )}
 

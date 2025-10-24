@@ -111,6 +111,18 @@ interface AIWaiterChatProps {
   setIsTyping: (isDone: boolean) => void;
   getItemQuantity: (itemId: string) => number;
   handleIncrementQuantity: (item: MenuItem) => void;
+  guestCount: {
+    adults: number;
+    children: number;
+    seniors: number;
+  };
+  setGuestCount: React.Dispatch<
+    React.SetStateAction<{
+      adults: number;
+      children: number;
+      seniors: number;
+    }>
+  >;
 }
 
 export function AIWaiterChat({
@@ -128,6 +140,8 @@ export function AIWaiterChat({
   setIsTyping,
   handleIncrementQuantity,
   getItemQuantity,
+  guestCount,
+  setGuestCount,
 }: AIWaiterChatProps) {
   // Generate welcome message
   const getWelcomeMessage = () => {
@@ -166,13 +180,6 @@ What sounds delightful to you today?`;
   const [dragStartY, setDragStartY] = useState(0);
   const [activeMenuTab, setActiveMenuTab] = useState<string>("starter");
 
-  // Guest count state
-  const [guestCount, setGuestCount] = useState({
-    adults: 1,
-    children: 0,
-    seniors: 0,
-  });
-
   // Helper function to get menu items by category
   const getMenuItemsByCategory = (category: string) => {
     return menuData.filter((item) => item.category === category);
@@ -187,10 +194,6 @@ What sounds delightful to you today?`;
       ...prev,
       [type]: Math.max(0, prev[type] + delta),
     }));
-  };
-
-  const getTotalGuests = () => {
-    return guestCount.adults + guestCount.children + guestCount.seniors;
   };
 
   const getGuestSummary = () => {

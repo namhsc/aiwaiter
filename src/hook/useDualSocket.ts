@@ -77,11 +77,12 @@ export default function useDualSocket() {
   const [conversationId, setConversationId] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessageAI[]>([]);
   const socketCs = useRef<Socket | null>(null);
+  const [isConnectSocketCs, setIsConectSocketCs] = useState(false);
   const socketMessage = useRef<Socket | null>(null);
   const [typing, setTyping] = useState(false);
-
   const stompClientRef = useRef<any>(null);
   const [messMngtCard, setMessMngtCard] = useState<any[]>([]);
+  const [dataSocketPlus, setDataSocketPlus] = useState<any>({});
 
   useEffect(() => {
     // 🔍 Kiểm tra nếu đã có trong localStorage
@@ -163,6 +164,7 @@ export default function useDualSocket() {
     // 3️⃣ Khi CS socket connect
     socketCs.current.on("connect", () => {
       console.log("✅ Connected to CS Socket");
+      setIsConectSocketCs(true);
       socketCs.current?.emit("join_room_conversation", {
         prevConversationId: null,
         conversationId,
@@ -241,6 +243,7 @@ export default function useDualSocket() {
       debug: false,
       preview: false,
       partition_ordinal: partitionOrdinal,
+      ...dataSocketPlus,
     };
 
     socketCs.current.emit("query_chat_message", message_chat, {
@@ -256,5 +259,7 @@ export default function useDualSocket() {
     typing,
     setTyping,
     messMngtCard,
+    isConnectSocketCs,
+    setDataSocketPlus,
   };
 }
