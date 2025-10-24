@@ -205,8 +205,7 @@ export default function App() {
 
   useEffect(() => {
     // if (isConnectSocketCs) {
-    console.log("guestCount", guestCount);
-    console.log("cart", cart);
+
     setDataSocketPlus({
       guests: {
         ...guestCount,

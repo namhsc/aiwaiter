@@ -90,14 +90,9 @@ export default function useDualSocket() {
     let savedId = localStorage.getItem("conversationId");
 
     if (!savedId) {
-      // 🚀 Nếu chưa có → tạo mới và lưu lại
       savedId = uuidv4();
       localStorage.setItem("conversationId", savedId);
-      console.log("🆕 Created new conversationId:", savedId);
-    } else {
-      console.log("♻️ Loaded existing conversationId:", savedId);
     }
-
     setConversationId(savedId);
   }, []);
 
@@ -155,11 +150,13 @@ export default function useDualSocket() {
 
     // 6️⃣ Lắng nghe message
     socketCs.current.on("message", (msg: IncomingMessage) => {
+      console.log("socketCs", msg);
       handleIncomingMessage(msg);
     });
 
     // 6️⃣ Lắng nghe message
     socketMessage.current.on("message", (msg: IncomingMessage) => {
+      console.log("socketMessage", msg);
       handleCheckDone(msg);
     });
 
@@ -205,6 +202,7 @@ export default function useDualSocket() {
   // 🧩 Hàm xử lý tin nhắn nhận được
   const handleIncomingMessage = (msg: IncomingMessage) => {
     const { type, content } = msg;
+    console.log("msg", msg);
     if (!msg) return;
     if (!type || !content) return;
     const { conversation_id } = content;
