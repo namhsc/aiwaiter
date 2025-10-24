@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
 
 // 🔧 Config endpoint
 const SOCKET_CS_ENDPOINT = "https://dev.dxconnect.lifesup.ai";
@@ -70,16 +72,70 @@ export interface OutgoingMessage {
 }
 
 // 🧠 Hook chính
-export default function useDualSocket(user: UserInfo | null) {
+export default function useDualSocket() {
   const [partitionOrdinal, setPartitionOrdinal] = useState<string | null>(null);
-  const [conversationId] = useState<string>(uuidv4());
+  const [conversationId, setConversationId] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessageAI[]>([]);
   const socketCs = useRef<Socket | null>(null);
   const socketMessage = useRef<Socket | null>(null);
   const [typing, setTyping] = useState(false);
 
+  const stompClientRef = useRef<any>(null);
+  const [messMngtCard, setMessMngtCard] = useState<any[]>([]);
+
   useEffect(() => {
-    if (!user) return;
+    // 🔍 Kiểm tra nếu đã có trong localStorage
+    let savedId = localStorage.getItem("conversationId");
+
+    if (!savedId) {
+      // 🚀 Nếu chưa có → tạo mới và lưu lại
+      savedId = uuidv4();
+      localStorage.setItem("conversationId", savedId);
+      console.log("🆕 Created new conversationId:", savedId);
+    } else {
+      console.log("♻️ Loaded existing conversationId:", savedId);
+    }
+
+    setConversationId(savedId);
+  }, []);
+
+  useEffect(() => {
+    const socket = new SockJS("http://123.30.149.66:8800/ws");
+    const client = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 5000,
+      onConnect: () => {
+        console.log("✅ Kết nối thành công tới Spring WebSocket");
+        // const mesTMP = {
+        //   sender: "System-add-card",
+        //   content: `"{'num_people': 1, 'selected_dishes': [{'id_dish': 'mn5', 'quantity': 3}], 'notes': None}"`,
+        // };
+        // setMessMngtCard([mesTMP]);
+
+        client.subscribe("/topic/messages", (msg) => {
+          console.log("📩 Nhận:", JSON.parse(msg.body));
+          setMessMngtCard((prev) => [JSON.parse(msg.body), ...prev]);
+        });
+
+        // // gửi thử tin nhắn
+        // client.publish({
+        //   destination: "/app/send",
+        //   body: JSON.stringify({ sender: "Boss", content: "Hello Spring!" }),
+        // });
+      },
+    });
+
+    client.activate();
+    stompClientRef.current = client;
+
+    // 🧹 Cleanup khi unmount
+    return () => {
+      client.deactivate();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!conversationId) return;
     const query = {
       ai_id: AI_ID,
       domain: DOMAIN,
@@ -101,7 +157,6 @@ export default function useDualSocket(user: UserInfo | null) {
 
     // 6️⃣ Lắng nghe message
     socketMessage.current.on("message", (msg: IncomingMessage) => {
-      //   console.log("meg socketMessage", msg);
       handleCheckDone(msg);
     });
 
@@ -200,5 +255,6 @@ export default function useDualSocket(user: UserInfo | null) {
     conversationId,
     typing,
     setTyping,
+    messMngtCard,
   };
 }

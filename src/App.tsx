@@ -1,14 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { AIWaiterChat } from "./components/AIWaiterChat";
 import { CartScreen } from "./components/CartScreen";
 import { PaymentScreen } from "./components/PaymentScreen";
 import { FeedbackScreen } from "./components/FeedbackScreen";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "./components/ui/dialog";
 import { MenuItem, CartItem, Voucher } from "./types/menu";
 import {
   findVoucher,
@@ -16,6 +10,7 @@ import {
   calculateDiscount,
 } from "./data/voucherData";
 import useDualSocket from "./hook/useDualSocket";
+import { menuData } from "./data/menuData";
 
 type Screen = "ai-chat" | "cart" | "payment" | "feedback" | "complete";
 
@@ -46,18 +41,18 @@ export default function App() {
     "landing"
   );
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: MenuItem, numberItem: number = 1) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
 
       if (existingItem) {
         return prevCart.map((cartItem) =>
           cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            ? { ...cartItem, quantity: cartItem.quantity + numberItem }
             : cartItem
         );
       } else {
-        return [...prevCart, { ...item, quantity: 1 }];
+        return [...prevCart, { ...item, quantity: numberItem }];
       }
     });
   };
@@ -123,7 +118,6 @@ export default function App() {
     setAppliedVoucher(null);
   };
 
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -131,9 +125,66 @@ export default function App() {
   const discountAmount = appliedVoucher
     ? calculateDiscount(appliedVoucher, cartTotal, cart)
     : 0;
+
+  // Helper function to get item quantity in cart
+  const getItemQuantity = (itemId: string) => {
+    const cartItem = cart.find((item) => item.id === itemId);
+    return cartItem ? cartItem.quantity : 0;
+  };
+
+  // Helper functions for quantity control
+  const handleIncrementQuantity = (item: MenuItem, numberItem: number = 1) => {
+    const currentQuantity = getItemQuantity(item.id);
+    if (currentQuantity === 0) {
+      addToCart(item, numberItem);
+    } else {
+      updateQuantity(item.id, currentQuantity + numberItem);
+    }
+  };
+
   const finalTotal = Math.max(0, cartTotal - discountAmount);
 
-  const { messages, sendMessage, typing, setTyping } = useDualSocket(user);
+  const { messages, sendMessage, typing, setTyping, messMngtCard } =
+    useDualSocket();
+
+  useEffect(() => {
+    if (!messMngtCard.length) return;
+    console.log("messMngtCard", messMngtCard);
+    const messCardNew = messMngtCard[0];
+
+    const { sender, content } = messCardNew;
+
+    switch (sender) {
+      case "System-add-card":
+        let inner = JSON.parse(content);
+
+        inner = inner
+          .replace(/'/g, '"') // thay ' → "
+          .replace(/\bNone\b/g, "null"); // thay None → null
+
+        const parsed = JSON.parse(inner);
+
+        const listDish = parsed.selected_dishes;
+        const listId = listDish.map((item: any) => item.id_dish);
+        const listDishAddCard = menuData.filter((item) =>
+          item.id.includes(listId)
+        );
+
+        listDishAddCard.map((item) => {
+          const findQuality = listDish.find(
+            (dish: any) => dish.id_dish === item.id
+          );
+
+          handleIncrementQuantity(item, findQuality.quantity || 1);
+        });
+
+        break;
+
+      default:
+        console.log("⚙️ Unknown message type card:", content);
+        break;
+    }
+  }, [messMngtCard]);
 
   return (
     <div className="min-h-screen">
@@ -152,6 +203,8 @@ export default function App() {
           messagesAI={messages}
           isTyping={typing}
           setIsTyping={setTyping}
+          getItemQuantity={getItemQuantity}
+          handleIncrementQuantity={handleIncrementQuantity}
         />
       )}
 
@@ -228,7 +281,6 @@ export default function App() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
