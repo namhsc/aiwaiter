@@ -191,6 +191,7 @@ What sounds delightful to you today?`;
 	const [showQuickActions, setShowQuickActions] = useState(
 		openedFrom !== 'cart',
 	);
+	const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
 	const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 	const [showMenuOverlay, setShowMenuOverlay] = useState(false);
 	const [menuDragY, setMenuDragY] = useState(0);
@@ -401,17 +402,6 @@ What sounds delightful to you today?`;
 		}
 	}, [inputValue]);
 
-	// Show Quick Actions when AI finishes typing (except when coming from cart)
-	useEffect(() => {
-		if (!isTyping && openedFrom !== 'cart') {
-			// Delay showing Quick Actions to give user time to read the response
-			const timer = setTimeout(() => {
-				setShowQuickActions(true);
-			}, 2000);
-			return () => clearTimeout(timer);
-		}
-	}, [isTyping, openedFrom]);
-
 	// Function to toggle Quick Actions
 	const handleToggleQuickActions = () => {
 		setShowQuickActions((prev) => {
@@ -435,8 +425,9 @@ What sounds delightful to you today?`;
 		// Hide onboarding after first message
 		if (showOnboarding) setShowOnboarding(false);
 
-		// Hide Quick Actions when sending message
+		// Hide Quick Actions when sending message and mark that user has sent a message
 		setShowQuickActions(false);
+		setHasUserSentMessage(true);
 		sendMessage(text);
 		setInputValue('');
 		setIsTyping(true);
@@ -1421,8 +1412,12 @@ What sounds delightful to you today?`;
 									value={inputValue}
 									onChange={(e) => {
 										setInputValue(e.target.value);
-										// Show Quick Actions when user starts typing (even when coming from cart)
-										if (e.target.value.trim() && !showQuickActions) {
+										// Show Quick Actions when user starts typing, but only if they haven't sent a message yet
+										if (
+											e.target.value.trim() &&
+											!showQuickActions &&
+											!hasUserSentMessage
+										) {
 											setShowQuickActions(true);
 										}
 									}}
