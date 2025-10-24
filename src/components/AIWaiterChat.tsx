@@ -757,7 +757,7 @@ What sounds delightful to you today?`;
 													{/* Controls Row */}
 													<div className="flex gap-4 w-full">
 														{/* Adult Controls */}
-														<div className="flex-1 flex items-center justify-center gap-2 bg-white rounded-xl py-2 border border-[#C4941D]/20 hover:border-[#C4941D]/40 transition-all duration-200">
+														<div className="flex-1 flex items-center justify-center gap-2 bg-white rounded-xl hover:border-[#C4941D]/40 transition-all duration-200">
 															<Button
 																onClick={() => updateGuestCount('adults', -1)}
 																variant="outline"
@@ -781,7 +781,7 @@ What sounds delightful to you today?`;
 														</div>
 
 														{/* Child Controls */}
-														<div className="flex-1 flex items-center justify-center gap-2 bg-white rounded-xl py-2 border border-[#C4941D]/20 hover:border-[#C4941D]/40 transition-all duration-200">
+														<div className="flex-1 flex items-center justify-center gap-2 bg-white rounded-xl hover:border-[#C4941D]/40 transition-all duration-200">
 															<Button
 																onClick={() => updateGuestCount('children', -1)}
 																variant="outline"
@@ -805,7 +805,7 @@ What sounds delightful to you today?`;
 														</div>
 
 														{/* Senior Controls */}
-														<div className="flex-1 flex items-center justify-center gap-2 bg-white rounded-xl py-2 border border-[#C4941D]/20 hover:border-[#C4941D]/40 transition-all duration-200">
+														<div className="flex-1 flex items-center justify-center gap-2 bg-white rounded-xl hover:border-[#C4941D]/40 transition-all duration-200">
 															<Button
 																onClick={() => updateGuestCount('seniors', -1)}
 																variant="outline"
