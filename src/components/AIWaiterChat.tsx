@@ -143,16 +143,32 @@ export function AIWaiterChat({
 	guestCount,
 	setGuestCount,
 }: AIWaiterChatProps) {
+	// Generate time-based greeting
+	const getTimeBasedGreeting = () => {
+		const now = new Date();
+		const hour = now.getHours();
+
+		if (hour >= 5 && hour < 12) {
+			return 'Good morning! 🌅';
+		} else if (hour >= 12 && hour < 17) {
+			return 'Good afternoon! ☀️';
+		} else if (hour >= 17 && hour < 21) {
+			return 'Good evening! 🌆';
+		} else {
+			return 'Good evening! 🌃';
+		}
+	};
+
 	// Generate welcome message
 	const getWelcomeMessage = () => {
-		return `Good evening! 🌟 Welcome to **Lumière Dorée**${
+		return `${getTimeBasedGreeting()} Welcome to **Lumière Dorée**${
 			tableNumber ? `, Table #${tableNumber}` : ''
 		}.
 
 I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
 
 ✨ **I can instantly help you:**
-• 🍽️ Order in seconds - just say "I want the Schnitzel"
+• 🍽️ Order in seconds 
 • 🎯 Get personalized recommendations
 • 🌱 Filter by dietary needs & allergies
 • 🍷 Suggest perfect wine pairings
@@ -172,7 +188,9 @@ What sounds delightful to you today?`;
 		from: { x: number; y: number };
 	} | null>(null);
 	const [inputHighlight, setInputHighlight] = useState(false);
-	const [showQuickActions, setShowQuickActions] = useState(true);
+	const [showQuickActions, setShowQuickActions] = useState(
+		openedFrom !== 'cart',
+	);
 	const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 	const [showMenuOverlay, setShowMenuOverlay] = useState(false);
 	const [menuDragY, setMenuDragY] = useState(0);
@@ -197,7 +215,7 @@ What sounds delightful to you today?`;
 	};
 
 	const getGuestSummary = () => {
-		const parts = [];
+		const parts: string[] = [];
 		if (guestCount.adults > 0) {
 			parts.push(
 				`${guestCount.adults} adult${guestCount.adults !== 1 ? 's' : ''}`,
@@ -231,10 +249,11 @@ What sounds delightful to you today?`;
 	const messagesContainerRef = useRef<HTMLDivElement>(null);
 	const menuOverlayRef = useRef<HTMLDivElement>(null);
 
-	// Reset used actions when chat is reopened to ensure Quick Actions are always visible
+	// Reset used actions when chat is reopened
 	useEffect(() => {
 		setUsedActions(new Set());
-		setShowQuickActions(true);
+		// Hide Quick Actions when coming back from cart, show them otherwise
+		setShowQuickActions(openedFrom !== 'cart');
 	}, [openedFrom]);
 
 	// Add global event listeners for drag
@@ -382,6 +401,17 @@ What sounds delightful to you today?`;
 		}
 	}, [inputValue]);
 
+	// Show Quick Actions when AI finishes typing (except when coming from cart)
+	useEffect(() => {
+		if (!isTyping && openedFrom !== 'cart') {
+			// Delay showing Quick Actions to give user time to read the response
+			const timer = setTimeout(() => {
+				setShowQuickActions(true);
+			}, 2000);
+			return () => clearTimeout(timer);
+		}
+	}, [isTyping, openedFrom]);
+
 	// Function to toggle Quick Actions
 	const handleToggleQuickActions = () => {
 		setShowQuickActions((prev) => {
@@ -447,8 +477,8 @@ What sounds delightful to you today?`;
 			setShowQuickActions(true);
 		}
 
-		// Special handling for "Checkout" or "Bill" action - open payment dialog instead
-		if (reply.toLowerCase() === 'checkout' || reply.toLowerCase() === 'bill') {
+		// Special handling for "Checkout" action - open payment dialog instead
+		if (reply.toLowerCase() === 'checkout') {
 			if (cart.length === 0) {
 				// If cart is empty, send regular message
 				const expandedPhrase = expandQuickAction(reply);
@@ -501,7 +531,7 @@ What sounds delightful to you today?`;
 					inputRef.current.focus();
 				}
 			}, 0);
-		}, 800); // Match animation duration
+		}, 600); // Match animation duration
 	};
 
 	const handleAddItemToCart = (item: MenuItem) => {
@@ -1389,7 +1419,13 @@ What sounds delightful to you today?`;
 								<Textarea
 									ref={inputRef}
 									value={inputValue}
-									onChange={(e) => setInputValue(e.target.value)}
+									onChange={(e) => {
+										setInputValue(e.target.value);
+										// Show Quick Actions when user starts typing (even when coming from cart)
+										if (e.target.value.trim() && !showQuickActions) {
+											setShowQuickActions(true);
+										}
+									}}
 									onKeyDown={(e) => {
 										if (isTyping) return;
 										if (e.key === 'Enter' && !e.shiftKey) {
@@ -1463,11 +1499,11 @@ What sounds delightful to you today?`;
 									inputContainerRef.current.getBoundingClientRect().top +
 									inputContainerRef.current.getBoundingClientRect().height / 2,
 								opacity: [1, 0.95, 0.85, 0.7, 0.5, 0.3],
-								scale: [1, 0.9, 0.75, 0.6, 0.45, 0.3],
+								scale: [1, 0.9, 0.75, 0.6, 0.45, 0.1],
 							}}
 							exit={{ opacity: 0, scale: 0.2 }}
 							transition={{
-								duration: 0.8,
+								duration: 0.6,
 								ease: [0.25, 0.1, 0.25, 1],
 								opacity: {
 									times: [0, 0.2, 0.4, 0.6, 0.8, 1],

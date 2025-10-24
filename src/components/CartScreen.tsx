@@ -15,6 +15,7 @@ import {
 	Tag,
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { RestaurantLogo } from './RestaurantLogo';
 import { getSuggestedVouchers } from '../data/voucherData';
 import {
 	AlertDialog,
@@ -102,17 +103,49 @@ export function CartScreen({
 			{/* Mobile-First Container */}
 			<div className="w-full max-w-[480px] min-h-screen bg-[#FFF9F0] pb-32">
 				{/* Header */}
-				<div className="bg-white border-b border-[#C4941D]/20 px-4 py-4 shadow-sm sticky top-0 z-10">
+				<div className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] border-b border-[#B8860B]/30 px-4 py-3 shadow-lg flex items-center gap-3 shrink-0">
+					<div className="w-12 h-12 shrink-0">
+						<RestaurantLogo />
+					</div>
+					<div className="flex-1">
+						<h1 className="text-white" style={{ fontFamily: 'Georgia, serif' }}>
+							Lumière <span className="text-[#FFF9F0]">Dorée</span>
+						</h1>
+						<div className="flex items-center gap-2 text-xs text-white/90">
+							<div className="flex items-center gap-1">
+								<div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+								<span className="text-[10px]">Online</span>
+							</div>
+						</div>
+					</div>
+					<div className="flex items-center gap-2">
+						{/* AI Waiter Button */}
+						{onOpenAI && (
+							<button
+								onClick={onOpenAI}
+								className="flex items-center gap-1.5 bg-white text-[#C4941D] px-2.5 py-1.5 h-8 rounded-lg shadow-md hover:bg-white/90 active:scale-95 transition-all"
+							>
+								<Sparkles className="w-3.5 h-3.5" />
+								<span className="text-xs font-semibold">AI Waiter</span>
+							</button>
+						)}
+					</div>
+				</div>
+
+				{/* Page Title */}
+				<div className="bg-white border-b border-[#C4941D]/20 px-4 py-3">
 					<div className="flex items-center gap-3">
 						<Button
 							onClick={onBack}
 							variant="ghost"
 							size="icon"
-							className="text-[#3E2723] rounded-full"
+							className="text-[#3E2723] rounded-full hover:bg-[#C4941D]/10"
 						>
 							<ArrowLeft className="w-5 h-5" />
 						</Button>
-						<h1 className="flex-1 text-center text-[#3E2723]">🛒 Your Cart</h1>
+						<h2 className="flex-1 text-[#3E2723] text-lg font-semibold text-center">
+							🛒 Your Cart
+						</h2>
 						<div className="w-10" /> {/* Spacer for centering */}
 					</div>
 				</div>

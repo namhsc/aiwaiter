@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { AIWaiterChat } from './components/AIWaiterChat';
 import { CartScreen } from './components/CartScreen';
 import { PaymentScreen } from './components/PaymentScreen';
-import { FeedbackScreen } from './components/FeedbackScreen';
 import { MenuItem, CartItem, Voucher } from './types/menu';
 import {
 	findVoucher,
@@ -13,7 +12,7 @@ import {
 import useDualSocket from './hook/useDualSocket';
 import { menuData } from './data/menuData';
 
-type Screen = 'ai-chat' | 'cart' | 'payment' | 'feedback' | 'complete';
+type Screen = 'ai-chat' | 'cart' | 'payment' | 'complete';
 
 // Detect browser language
 const detectLanguage = (): string => {
@@ -37,13 +36,13 @@ export default function App() {
 	const [currentScreen, setCurrentScreen] = useState<Screen>('ai-chat');
 	const [language] = useState(detectLanguage());
 
-	// Lấy table number từ URL parameter, nếu không có thì tạo ngẫu nhiên
+	// Lấy table number từ URL parameter, nếu không có thì random chọn bàn
 	const getTableNumber = () => {
-		const tableFromUrl = searchParams.get('table');
+		const tableFromUrl = searchParams.get('t');
 		if (tableFromUrl) {
 			return tableFromUrl;
 		}
-		return String(Math.floor(Math.random() * 20) + 1);
+		return String(Math.floor(Math.random() * 20) + 1); // Random bàn từ 1-20
 	};
 
 	const [tableNumber] = useState(getTableNumber());
@@ -96,11 +95,39 @@ export default function App() {
 	};
 
 	const handlePaymentComplete = () => {
-		setCurrentScreen('feedback');
+		setCurrentScreen('complete');
 	};
 
-	const handleFeedbackComplete = () => {
-		setCurrentScreen('complete');
+	const handlePaymentWithMessage = (paymentMethod: string, total: number) => {
+		// Create payment message based on method
+		let paymentMessage = '';
+		switch (paymentMethod) {
+			case 'cash':
+				paymentMessage = `I would like to pay €${total.toFixed(
+					2,
+				)} in cash. Please bring the payment terminal to my table.`;
+				break;
+			case 'card':
+				paymentMessage = `I would like to pay €${total.toFixed(
+					2,
+				)} by credit card. Please bring the payment terminal to my table.`;
+				break;
+			case 'qr':
+				paymentMessage = `I would like to pay €${total.toFixed(
+					2,
+				)} via QR code. I have scanned the QR code and completed the payment.`;
+				break;
+			default:
+				paymentMessage = `I would like to pay €${total.toFixed(
+					2,
+				)} for my order.`;
+		}
+
+		// Send message to AI
+		sendMessage(paymentMessage);
+
+		// Switch to AI chat
+		setCurrentScreen('ai-chat');
 	};
 
 	const handleStartOver = () => {
@@ -281,16 +308,14 @@ export default function App() {
 					discount={discountAmount}
 					total={finalTotal + finalTotal * 0.19}
 					onComplete={handlePaymentComplete}
+					onBack={() => setCurrentScreen('cart')}
+					onPaymentWithMessage={handlePaymentWithMessage}
 					onOpenAI={() => {
 						setChatOpenedFrom('cart');
 						setCurrentScreen('ai-chat');
 					}}
 					appliedVoucher={appliedVoucher}
 				/>
-			)}
-
-			{currentScreen === 'feedback' && (
-				<FeedbackScreen onComplete={handleFeedbackComplete} />
 			)}
 
 			{currentScreen === 'complete' && (
