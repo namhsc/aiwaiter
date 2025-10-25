@@ -101,8 +101,6 @@ export default function useDualSocket() {
             .replace(/'/g, '"') // thay ' → "
             .replace(/\bNone\b/g, "null"); // thay None → null
           const parsed = JSON.parse(inner);
-          console.log("dataMess", dataMess);
-          console.log("parsed", parsed);
 
           if (
             parsed &&

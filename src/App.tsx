@@ -160,47 +160,39 @@ export default function App() {
   } = useDualSocket();
 
   useEffect(() => {
+
     if (!messMngtCard.length) return;
+
     const messCardNew = messMngtCard[0];
-    // const messCardNew = {
-    //   sender: "System-add-card",
-    //   content:
-    //     "\"{'num_people': 3, 'selected_dishes': [{'id_dish': 'st1', 'quantity': 2}, {'id_dish': 'mn4', 'quantity': 2}, {'id_dish': 'st2', 'quantity': 1}, {'id_dish': 'ds1', 'quantity': 1}], 'notes': None}\"",
-    // };
-    console.log("messCardNew", messCardNew);
-    const { sender, content } = messCardNew;
 
-    switch (sender) {
-      case "System-add-card":
-        let inner = JSON.parse(content);
+    const { content } = messCardNew;
+    let inner = JSON.parse(content);
 
-        inner = inner
-          .replace(/'/g, '"') // thay ' → "
-          .replace(/\bNone\b/g, "null"); // thay None → null
+    inner = inner
+      .replace(/'/g, '"') // thay ' → "
+      .replace(/\bNone\b/g, "null"); // thay None → null
 
-        const parsed = JSON.parse(inner);
-        const listDish = parsed.selected_dishes;
-        const listId = listDish.map((item: any) => item.id_dish);
-        const listDishAddCard = menuData.filter((item) =>
-          listId.includes(item.id)
+    const parsed = JSON.parse(inner);
+    const listDish = parsed.selected_dishes;
+    const listId = listDish.map((item: any) => item.id_dish);
+    const listDishAddCard = menuData.filter((item) =>
+      listId.includes(item.id)
+    );
+
+    setCart(
+      listDishAddCard.map((item) => {
+        const findQuality = listDish.find(
+          (dish: any) => dish.id_dish === item.id
         );
-        console.log("listDishAddCard", listDishAddCard);
-        setCart(
-          listDishAddCard.map((item) => {
-            const findQuality = listDish.find(
-              (dish: any) => dish.id_dish === item.id
-            );
-            console.log("findQuality", findQuality);
-            return { ...item, quantity: findQuality.quantity || 1 };
-          })
-        );
+        return { ...item, quantity: findQuality.quantity || 1 };
+      })
+    );
 
-        break;
-
-      default:
-        console.log("⚙️ Unknown message type card:", content);
-        break;
-    }
+    setGuestCount({
+      adults: parsed?.num_people?.adults || 1,
+      children: parsed?.num_people?.children || 0,
+      seniors: parsed?.num_people?.seniors || 0,
+    });
   }, [messMngtCard]);
 
   useEffect(() => {
