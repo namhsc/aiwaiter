@@ -45,6 +45,7 @@ export function PaymentMethodSelector({
 	const handleConfirm = () => {
 		const selected = paymentMethods.find((m) => m.id === selectedMethod);
 		if (selected) {
+			// Call onConfirm immediately to close dialog and return to chat
 			onConfirm({ id: selected.id, name: selected.name });
 		}
 	};
@@ -143,10 +144,10 @@ export function PaymentMethodSelector({
 			<Button
 				onClick={handleConfirm}
 				disabled={!selectedMethod}
-				className="w-full h-11 bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-xl shadow-md hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+				className="w-full h-11 bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
 			>
 				<Check className="w-4 h-4 mr-2" />
-				Confirm Payment Method
+				{selectedMethod ? `Pay with ${paymentMethods.find(m => m.id === selectedMethod)?.name}` : 'Select Payment Method'}
 			</Button>
 
 			<p className="text-xs text-center text-[#8B7355]/80">

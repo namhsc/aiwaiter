@@ -300,8 +300,18 @@ export const generateAIResponse = (
 		} else if (lowerMessage.includes('qr')) {
 			paymentMethod = 'QR Code';
 			methodEmoji = '📱';
+			
+			// Calculate total from cart
+			const total = cart.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
+			const tax = total * 0.19;
+			const grandTotal = total + tax;
+			
+			// Generate QR code URL
+			const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=LumiereDoreePay_Order_${grandTotal.toFixed(2)}_Table5`;
+			
 			methodDetails =
-				'Excellent choice! A QR code has been displayed above. Simply scan it with your mobile payment app (Apple Pay, Google Pay, Alipay, or WeChat Pay) to complete your payment securely.';
+				'Excellent choice! Please scan the QR code below with your mobile payment app (Apple Pay, Google Pay, Alipay, or WeChat Pay) to complete your payment securely.\n\n' +
+				`@${qrCodeUrl}`;
 		}
 
 		if (paymentMethod) {
@@ -330,7 +340,7 @@ export const generateAIResponse = (
 		const seniors = seniorMatch ? parseInt(seniorMatch[1]) : 0;
 		const total = adults + children + seniors;
 
-		let guestSummary = [];
+		let guestSummary: string[] = [];
 		if (adults > 0)
 			guestSummary.push(`${adults} adult${adults > 1 ? 's' : ''}`);
 		if (children > 0)
