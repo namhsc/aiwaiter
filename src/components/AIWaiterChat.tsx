@@ -55,6 +55,8 @@ interface AIWaiterChatProps {
 			seniors: number;
 		}>
 	>;
+	streamingMessage: string;
+	isStreaming: boolean;
 }
 
 export function AIWaiterChat({
@@ -74,6 +76,8 @@ export function AIWaiterChat({
 	getItemQuantity,
 	guestCount,
 	setGuestCount,
+	streamingMessage,
+	isStreaming,
 }: AIWaiterChatProps) {
 
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -139,49 +143,53 @@ export function AIWaiterChat({
 	// Update welcome message when messagesAI changes
 	useEffect(() => {
 		if (!messagesAI.length) {
-			setMessages([
-				{
-					id: '1',
-					text: getWelcomeMessage(tableNumber),
-					sender: 'ai',
-					timestamp: new Date(),
-				},
-			]);
+		  setMessages([
+			{
+			  id: '1',
+			  text: getWelcomeMessage(tableNumber),
+			  sender: 'ai',
+			  timestamp: new Date(),
+			},
+		  ]);
 		} else {
-			setMessages([
-				{
-					id: '1',
-					text: getWelcomeMessage(tableNumber),
-					sender: 'ai',
-					timestamp: new Date(),
-				},
-				...messagesAI.map((itemMess: ChatMessageAI) => {
-					const { content } = itemMess;
-
-					const inforCretor = JSON.parse(content.author);
-
-					// Trích xuất suggestion IDs từ nội dung
-					const matches = content.content.match(/\(([^)]+)\)/g) || [];
-					const suggestionIds = matches.map((m) => m.slice(1, -1));
-
-					// Tìm món ăn tương ứng với suggestion IDs
-					const suggestions = suggestionIds
-						.map((id) => menuData.find((item) => item.id === id))
-						.filter(Boolean) as MenuItem[];
-
-					return {
-						id: content.id,
-						text: content.content.replace(/\s*\([^)]*\)/g, ''),
-						sender: (inforCretor.type === 'user' ? 'user' : 'ai') as
-							| 'user'
-							| 'ai',
-						timestamp: new Date(content.created_at),
-						suggestions: suggestions.length > 0 ? suggestions : undefined,
-					};
-				}),
-			]);
+		  setMessages([
+			{
+			  id: '1',
+			  text: getWelcomeMessage(tableNumber),
+			  sender: 'ai',
+			  timestamp: new Date(),
+			},
+			...messagesAI.map((itemMess: ChatMessageAI) => {
+			  const { content } = itemMess;
+			  const inforCretor = JSON.parse(content.author);
+	
+			  // Trích xuất suggestion IDs từ nội dung
+			  const matches = content.content.match(/\(([^)]+)\)/g) || [];
+			  const suggestionIds = matches.map((m) => m.slice(1, -1));
+	
+			  // Tìm món ăn tương ứng với suggestion IDs
+			  const suggestions = suggestionIds
+				.map((id) => menuData.find((item) => item.id === id))
+				.filter(Boolean) as MenuItem[];
+	
+			  return {
+				id: content.id,
+				text: content.content.replace(/\s*\([^)]*\)/g, ''),
+				sender: (inforCretor.type === 'user' ? 'user' : 'ai') as 'user' | 'ai',
+				timestamp: new Date(content.created_at),
+				suggestions: suggestions.length > 0 ? suggestions : undefined,
+			  };
+			}),
+			// Thêm streaming message nếu đang streaming
+			...(isStreaming && streamingMessage ? [{
+			  id: 'streaming',
+			  text: streamingMessage,
+			  sender: 'ai' as const,
+			  timestamp: new Date(),
+			}] : []),
+		  ]);
 		}
-	}, [messagesAI, tableNumber]);
+	  }, [messagesAI, tableNumber, streamingMessage, isStreaming]);
 
 	// Get context based on cart state
 	const context = getContext(cart.length);

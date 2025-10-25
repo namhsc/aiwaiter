@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AIWaiterChat } from "./components/AIWaiterChat";
 import { CartScreen } from "./components/CartScreen";
 import { PaymentScreen } from "./components/PaymentScreen";
@@ -155,6 +155,8 @@ export default function App() {
     setTyping,
     messMngtCard,
     setDataSocketPlus,
+    streamingMessage,
+    isStreaming,
   } = useDualSocket();
 
   useEffect(() => {
@@ -236,6 +238,8 @@ export default function App() {
           handleIncrementQuantity={handleIncrementQuantity}
           guestCount={guestCount}
           setGuestCount={setGuestCount}
+          streamingMessage={streamingMessage}
+          isStreaming={isStreaming}
         />
       )}
 

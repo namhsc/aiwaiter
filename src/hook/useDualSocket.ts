@@ -67,6 +67,9 @@ export default function useDualSocket() {
   const [conversationId] = useState<string>(uuidv4());
   const [messages, setMessages] = useState<ChatMessageAI[]>([]);
   const socketCs = useRef<Socket | null>(null);
+  const [streamingMessage, setStreamingMessage] = useState<string>(''); // Thêm state cho streaming
+  const [isStreaming, setIsStreaming] = useState<boolean>(false); // Thêm state để track streaming
+ 
   // const [isConnectSocketCs, setIsConectSocketCs] = useState(false);
   const socketMessage = useRef<Socket | null>(null);
   const [typing, setTyping] = useState(false);
@@ -192,8 +195,34 @@ export default function useDualSocket() {
 
       case "message/new_for_cs_chat":
         if (isDone) {
+          // Khi gặp DONE, hoàn thành message streaming
+          if (isStreaming && streamingMessage.trim()) {
+            const finalMessage: ChatMessageAI = {
+              conversation_id,
+              content: {
+                id: uuidv4(),
+                conversation_id,
+                author: '{"type": "ai", "need_human": false}',
+                content: streamingMessage,
+                agent_id: true,
+                created_at: new Date().toISOString(),
+                creator: true,
+                message_state: true,
+              },
+            };
+            setMessages((prev) => [...prev, finalMessage]);
+          }
+          setStreamingMessage('');
+          setIsStreaming(false);
           setTyping(false);
           return;
+        }
+
+        // Xử lý streaming message
+        if (textChunk && textChunk !== "DONE") {
+          setIsStreaming(true);
+          setTyping(true);
+          setStreamingMessage((prev) => prev + textChunk);
         }
         break;
 
@@ -207,7 +236,6 @@ export default function useDualSocket() {
         return;
 
       default:
-        // console.log("⚙️ Unknown message type:", dataMess);
         break;
     }
   };
@@ -287,6 +315,8 @@ export default function useDualSocket() {
     setTyping,
     messMngtCard,
     // isConnectSocketCs,
+    streamingMessage, // Thêm streaming message vào return
+    isStreaming, // Thêm isStreaming vào return
     setDataSocketPlus,
   };
 }
