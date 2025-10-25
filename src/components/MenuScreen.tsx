@@ -311,37 +311,7 @@ export function MenuScreen({
 				</motion.div>
 			)}
 
-			{/* Enhanced Floating AI Button */}
-			<motion.div
-				initial={{ scale: 0, rotate: -180 }}
-				animate={{ scale: 1, rotate: 0 }}
-				transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-				className="fixed bottom-24 right-6 z-30"
-			>
-				<motion.div
-					animate={{
-						boxShadow: [
-							'0 0 0 0 rgba(196, 148, 29, 0.4)',
-							'0 0 0 10px rgba(196, 148, 29, 0)',
-						],
-					}}
-					transition={{ duration: 2, repeat: Infinity }}
-					className="rounded-full"
-				>
-					<motion.button
-						whileHover={{ scale: 1.05 }}
-						whileTap={{ scale: 0.95 }}
-						onClick={onOpenAI}
-						className="relative w-16 h-16 bg-gradient-to-br from-[#C4941D] to-[#D4A52D] text-white rounded-full shadow-2xl flex flex-col items-center justify-center border-4 border-white overflow-visible"
-					>
-						<div className="text-2xl mb-[-2px]">🤵</div>
-						<div className="text-[8px] leading-none text-white/90">AI Chat</div>
-						<div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse flex items-center justify-center">
-							<Sparkles className="w-2.5 h-2.5 text-white" />
-						</div>
-					</motion.button>
-				</motion.div>
-			</motion.div>
+			
 
 			{/* Dish Details Dialog */}
 			<DishDetailsDialog

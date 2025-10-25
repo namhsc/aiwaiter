@@ -457,23 +457,7 @@ export function CartScreen({
 					</AlertDialogContent>
 				</AlertDialog>
 
-				{/* Floating AI Button */}
-				{onOpenAI && (
-					<motion.div
-						initial={{ scale: 0 }}
-						animate={{ scale: 1 }}
-						className="fixed bottom-24 right-6 z-30"
-					>
-						<motion.button
-							whileTap={{ scale: 0.95 }}
-							onClick={onOpenAI}
-							className="w-16 h-16 bg-[#C4941D] text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white"
-						>
-							<div className="text-2xl">🤵</div>
-							<div className="absolute -top-1 -right-1 w-3 h-3 bg-[#6B8E23] rounded-full border-2 border-white animate-pulse" />
-						</motion.button>
-					</motion.div>
-				)}
+				
 			</div>
 		</div>
 	);

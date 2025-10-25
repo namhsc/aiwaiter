@@ -56,7 +56,7 @@ export function PaymentScreen({
 		setTimeout(() => {
 			setIsProcessing(false);
 
-			// Send appropriate message based on payment method
+			// Send payment message to AI chat
 			if (onPaymentWithMessage) {
 				onPaymentWithMessage(selectedMethod, total);
 			} else {

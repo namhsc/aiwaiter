@@ -83,7 +83,21 @@ export default function App() {
   };
 
   const handlePaymentComplete = () => {
-    setCurrentScreen("feedback");
+    setCurrentScreen("ai-chat");
+  };
+
+  const handlePaymentWithMessage = (method: string, total: number) => {
+    // Get method display name
+    const methodNames = {
+      'cash': 'tiền mặt',
+      'card': 'thẻ tín dụng/thẻ ghi nợ', 
+      'qr': 'QR Pay'
+    };
+    
+    // Send payment message to AI chat as if user is speaking
+    const paymentMessage = `Tôi muốn thanh toán bằng ${methodNames[method as keyof typeof methodNames] || method} với tổng số tiền €${total.toFixed(2)}.`;
+    sendMessage(paymentMessage);
+    setCurrentScreen("ai-chat");
   };
 
   // const handleFeedbackComplete = () => {
@@ -259,6 +273,8 @@ export default function App() {
           discount={discountAmount}
           total={finalTotal + finalTotal * 0.19}
           onComplete={handlePaymentComplete}
+          onBack={() => setCurrentScreen("cart")}
+          onPaymentWithMessage={handlePaymentWithMessage}
           onOpenAI={() => {
             setChatOpenedFrom("cart");
             setCurrentScreen("ai-chat");
