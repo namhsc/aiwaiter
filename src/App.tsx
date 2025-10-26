@@ -87,15 +87,15 @@ export default function App() {
   };
 
   const handlePaymentWithMessage = (method: string, total: number) => {
-    // Get method display name
+    // Get method display name in English
     const methodNames = {
-      'cash': 'tiền mặt',
-      'card': 'thẻ tín dụng/thẻ ghi nợ', 
+      'cash': 'cash',
+      'card': 'credit/debit card', 
       'qr': 'QR Pay'
     };
     
-    // Send payment message to AI chat as if user is speaking
-    const paymentMessage = `Tôi muốn thanh toán bằng ${methodNames[method as keyof typeof methodNames] || method} với tổng số tiền €${total.toFixed(2)}.`;
+    // Send payment message to AI chat as if user is speaking, in English
+    const paymentMessage = `I would like to pay by ${methodNames[method as keyof typeof methodNames] || method} with a total amount of €${total.toFixed(2)}.`;
     sendMessage(paymentMessage);
     setCurrentScreen("ai-chat");
   };
