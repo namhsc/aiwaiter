@@ -5,9 +5,12 @@ import { AccountInfoCard } from '../components/chat/AccountInfoCard';
 // Function to detect image URLs in text
 const detectImageUrls = (text: string): string[] => {
 	// Regex để nhận diện link ảnh, bao gồm cả link có @ ở đầu
-	const imageUrlRegex = /@?(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|svg|webp|bmp|ico)(?:\?[^\s]*)?)/gi;
+	const imageUrlRegex =
+		/@?(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|svg|webp|bmp|ico)(?:\?[^\s]*)?)/gi;
 	const matches = text.match(imageUrlRegex);
-	return matches ? matches.map(url => url.startsWith('@') ? url.substring(1) : url) : [];
+	return matches
+		? matches.map((url) => (url.startsWith('@') ? url.substring(1) : url))
+		: [];
 };
 
 // Function to extract payment info from QR code URL
@@ -15,23 +18,26 @@ const extractPaymentInfo = (url: string) => {
 	// Extract amount from QR code data
 	const amountMatch = url.match(/LumiereDoreePay[^_]*_([\d.]+)/);
 	const amount = amountMatch ? `€${amountMatch[1]}` : '€45.67';
-	
+
 	// Extract table number from QR code data
 	const tableMatch = url.match(/Table(\d+)/);
 	const tableNumber = tableMatch ? tableMatch[1] : '5';
-	
+
 	return { amount, tableNumber };
 };
 
 // Function to render image from URL
 const renderImage = (url: string, index: number): React.ReactNode => {
 	// Check if this is a QR code for payment (more specific detection)
-	const isPaymentQRCode = url.includes('qrserver.com') && 
-		(url.includes('LumiereDoreePay') || url.includes('payment') || url.includes('pay'));
-	
+	const isPaymentQRCode =
+		url.includes('qrserver.com') &&
+		(url.includes('LumiereDoreePay') ||
+			url.includes('payment') ||
+			url.includes('pay'));
+
 	if (isPaymentQRCode) {
 		const { amount, tableNumber } = extractPaymentInfo(url);
-		
+
 		return (
 			<React.Fragment key={`qr-with-account-${index}`}>
 				<ImageMessage url={url} />
@@ -46,7 +52,7 @@ const renderImage = (url: string, index: number): React.ReactNode => {
 			</React.Fragment>
 		);
 	}
-	
+
 	return <ImageMessage key={`image-${index}`} url={url} />;
 };
 
@@ -54,19 +60,23 @@ const renderImage = (url: string, index: number): React.ReactNode => {
 export const renderHTML = (text: string): React.ReactNode => {
 	// First detect image URLs
 	const imageUrls = detectImageUrls(text);
-	
+
 	// If there are image URLs, split text and render images
 	if (imageUrls.length > 0) {
 		let processedText = text;
 		const elements: React.ReactNode[] = [];
 		let lastIndex = 0;
-		
+
 		// Tìm tất cả các vị trí của URL (bao gồm cả @ ở đầu)
-		const urlPositions: { url: string; startIndex: number; endIndex: number }[] = [];
+		const urlPositions: {
+			url: string;
+			startIndex: number;
+			endIndex: number;
+		}[] = [];
 		imageUrls.forEach((url) => {
 			// Loại bỏ @ nếu có
 			const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
-			
+
 			// Tìm URL với @ ở đầu
 			const withAt = `@${cleanUrl}`;
 			const withAtIndex = processedText.indexOf(withAt);
@@ -74,7 +84,7 @@ export const renderHTML = (text: string): React.ReactNode => {
 				urlPositions.push({
 					url: cleanUrl,
 					startIndex: withAtIndex,
-					endIndex: withAtIndex + withAt.length
+					endIndex: withAtIndex + withAt.length,
 				});
 			} else {
 				// Tìm URL không có @
@@ -83,15 +93,15 @@ export const renderHTML = (text: string): React.ReactNode => {
 					urlPositions.push({
 						url: cleanUrl,
 						startIndex: urlIndex,
-						endIndex: urlIndex + cleanUrl.length
+						endIndex: urlIndex + cleanUrl.length,
 					});
 				}
 			}
 		});
-		
+
 		// Sắp xếp theo thứ tự xuất hiện
 		urlPositions.sort((a, b) => a.startIndex - b.startIndex);
-		
+
 		urlPositions.forEach(({ url, startIndex, endIndex }, index) => {
 			// Add text before the URL
 			const textBefore = processedText.substring(lastIndex, startIndex);
@@ -99,27 +109,27 @@ export const renderHTML = (text: string): React.ReactNode => {
 				elements.push(
 					<span key={`text-${index}`} style={{ whiteSpace: 'pre-wrap' }}>
 						{textBefore}
-					</span>
+					</span>,
 				);
 			}
-			
+
 			// Add the image
 			elements.push(renderImage(url, index));
-			
+
 			// Update lastIndex to continue from after the URL
 			lastIndex = endIndex;
 		});
-		
+
 		// Add remaining text after the last URL
 		const remainingText = processedText.substring(lastIndex);
 		if (remainingText.trim()) {
 			elements.push(
 				<span key="text-final" style={{ whiteSpace: 'pre-wrap' }}>
 					{remainingText}
-				</span>
+				</span>,
 			);
 		}
-		
+
 		// Process each element for bold formatting and HTML tags
 		return elements.map((element, index) => {
 			if (typeof element === 'string') {
@@ -128,7 +138,7 @@ export const renderHTML = (text: string): React.ReactNode => {
 			return element;
 		});
 	}
-	
+
 	// If no images, process normally
 	return processTextFormatting(text, 'main');
 };
@@ -163,7 +173,10 @@ const processTextFormatting = (text: string, key: string): React.ReactNode => {
 				if (index % 2 === 1) {
 					// This is the content inside <strong> tags
 					return (
-						<strong key={`${key}-strong-${index}`} className="text-[#C4941D] font-semibold">
+						<strong
+							key={`${key}-strong-${index}`}
+							className="text-[#C4941D] font-semibold"
+						>
 							{part}
 						</strong>
 					);
@@ -182,7 +195,9 @@ const processTextFormatting = (text: string, key: string): React.ReactNode => {
 
 		if (Array.isArray(content)) {
 			return content.map((item, index) => (
-				<React.Fragment key={`${key}-fragment-${index}`}>{processHTML(item)}</React.Fragment>
+				<React.Fragment key={`${key}-fragment-${index}`}>
+					{processHTML(item)}
+				</React.Fragment>
 			));
 		}
 
@@ -209,10 +224,46 @@ export const getTimeBasedGreeting = () => {
 };
 
 // Generate welcome message
-export const getWelcomeMessage = (tableNumber?: string) => {
+export const getWelcomeMessage = (
+	tableNumber?: string,
+	guestCount?: { adults: number; children: number; seniors: number },
+) => {
+	// Tạo chuỗi mô tả số khách
+	const getGuestText = () => {
+		if (!guestCount) return '';
+
+		const parts: string[] = [];
+		if (guestCount.adults > 0) {
+			parts.push(
+				`${guestCount.adults} adult${guestCount.adults !== 1 ? 's' : ''}`,
+			);
+		}
+		if (guestCount.children > 0) {
+			parts.push(
+				`${guestCount.children} child${guestCount.children !== 1 ? 'ren' : ''}`,
+			);
+		}
+		if (guestCount.seniors > 0) {
+			parts.push(
+				`${guestCount.seniors} senior${guestCount.seniors !== 1 ? 's' : ''}`,
+			);
+		}
+
+		const totalGuests =
+			guestCount.adults + guestCount.children + guestCount.seniors;
+
+		if (parts.length === 0) return '';
+
+		return ` I see you're dining with ${totalGuests} guest${
+			totalGuests !== 1 ? 's' : ''
+		} (${parts.join(', ')})`;
+	};
+
+	const guestText = getGuestText();
+
 	return `${getTimeBasedGreeting()} Welcome to **Lumière Dorée**${
 		tableNumber ? `, Table #${tableNumber}` : ''
-	}.
+	}.${guestText}
 
 I'm your AI Waiter, powered by advanced intelligence to make your dining experience extraordinary.
 
@@ -227,12 +278,9 @@ What sounds delightful to you today?`;
 };
 
 // Get context based on cart state
-export const getContext = (cartLength: number):
-	| 'initial'
-	| 'browsing'
-	| 'cart-empty'
-	| 'cart-full'
-	| 'ordering' => {
+export const getContext = (
+	cartLength: number,
+): 'initial' | 'browsing' | 'cart-empty' | 'cart-full' | 'ordering' => {
 	if (cartLength === 0) {
 		return 'cart-empty';
 	} else if (cartLength > 0 && cartLength < 3) {

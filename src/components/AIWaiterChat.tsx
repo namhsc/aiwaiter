@@ -57,6 +57,7 @@ interface AIWaiterChatProps {
 	>;
 	streamingMessage: string;
 	isStreaming: boolean;
+	onEndDemo?: () => void;
 }
 
 export function AIWaiterChat({
@@ -78,6 +79,7 @@ export function AIWaiterChat({
 	setGuestCount,
 	streamingMessage,
 	isStreaming,
+	onEndDemo,
 }: AIWaiterChatProps) {
 
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -146,7 +148,7 @@ export function AIWaiterChat({
 		  setMessages([
 			{
 			  id: '1',
-			  text: getWelcomeMessage(tableNumber),
+			  text: getWelcomeMessage(tableNumber, guestCount),
 			  sender: 'ai',
 			  timestamp: new Date(),
 			},
@@ -155,23 +157,23 @@ export function AIWaiterChat({
 		  setMessages([
 			{
 			  id: '1',
-			  text: getWelcomeMessage(tableNumber),
+			  text: getWelcomeMessage(tableNumber, guestCount),
 			  sender: 'ai',
 			  timestamp: new Date(),
 			},
 			...messagesAI.map((itemMess: ChatMessageAI) => {
 			  const { content } = itemMess;
 			  const inforCretor = JSON.parse(content.author);
-	
+
 			  // Trích xuất suggestion IDs từ nội dung
 			  const matches = content.content.match(/\(([^)]+)\)/g) || [];
 			  const suggestionIds = matches.map((m) => m.slice(1, -1));
-	
+
 			  // Tìm món ăn tương ứng với suggestion IDs
 			  const suggestions = suggestionIds
 				.map((id) => menuData.find((item) => item.id === id))
 				.filter(Boolean) as MenuItem[];
-	
+
 			  return {
 				id: content.id,
 				text: content.content.replace(/\s*\([^)]*\)/g, ''),
@@ -189,7 +191,7 @@ export function AIWaiterChat({
 			}] : []),
 		  ]);
 		}
-	  }, [messagesAI, tableNumber, streamingMessage, isStreaming]);
+	  }, [messagesAI, tableNumber, guestCount, streamingMessage, isStreaming]);
 
 	// Get context based on cart state
 	const context = getContext(cart.length);
@@ -412,6 +414,7 @@ Is there anything else I can help you with?`,
 					}}
 					onViewCart={onViewCart}
 					cartItemCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+					onEndDemo={onEndDemo}
 				/>
 
 				{/* Quick Actions */}

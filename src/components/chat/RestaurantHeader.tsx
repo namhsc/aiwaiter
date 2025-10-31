@@ -7,6 +7,7 @@ interface RestaurantHeaderProps {
 	onToggleMenu: () => void;
 	onViewCart: () => void;
 	cartItemCount: number;
+	onEndDemo?: () => void;
 }
 
 export function RestaurantHeader({
@@ -14,12 +15,24 @@ export function RestaurantHeader({
 	onToggleMenu,
 	onViewCart,
 	cartItemCount,
+	onEndDemo,
 }: RestaurantHeaderProps) {
 	return (
 		<div className="bg-gradient-to-r from-[#C4941D] to-[#D4A52D] border-b border-[#B8860B]/30 px-4 py-3 shadow-lg flex items-center gap-3 shrink-0">
-			<div className="w-12 h-12 shrink-0">
-				<RestaurantLogo />
-			</div>
+			{onEndDemo ? (
+				<button
+					onClick={onEndDemo}
+					className="w-12 h-12 shrink-0 cursor-pointer hover:opacity-80 active:scale-95 transition-all"
+					aria-label="Kết thúc Demo"
+					title="Kết thúc Demo - Xóa dữ liệu"
+				>
+					<RestaurantLogo />
+				</button>
+			) : (
+				<div className="w-12 h-12 shrink-0">
+					<RestaurantLogo />
+				</div>
+			)}
 
 			<div className="flex-1">
 				<h1 className="text-white" style={{ fontFamily: 'Georgia, serif' }}>

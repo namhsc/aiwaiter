@@ -77,6 +77,25 @@ export default function useDualSocket() {
   const [messMngtCard, setMessMngtCard] = useState<any[]>([]);
   const [dataSocketPlus, setDataSocketPlus] = useState<any>({});
 
+  // Khôi phục lịch sử chat từ localStorage khi component mount (nếu khách hàng đã confirm)
+  useEffect(() => {
+    const hasConfirmedGuestCount = localStorage.getItem('hasConfirmedGuestCount') === 'true';
+    
+    if (hasConfirmedGuestCount) {
+      try {
+        const savedChatHistory = localStorage.getItem('chatHistory');
+        if (savedChatHistory) {
+          const parsedMessages = JSON.parse(savedChatHistory);
+          if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+            setMessages(parsedMessages);
+          }
+        }
+      } catch (e) {
+        console.error('Error loading chat history:', e);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const socket = new SockJS("http://123.30.149.66:8800/ws");
     const client = new Client({

@@ -11,7 +11,10 @@ interface GuestCount {
 
 interface GuestCountSelectorProps {
 	guestCount: GuestCount;
-	onUpdateGuestCount: (type: 'adults' | 'children' | 'seniors', delta: number) => void;
+	onUpdateGuestCount: (
+		type: 'adults' | 'children' | 'seniors',
+		delta: number,
+	) => void;
 }
 
 export function GuestCountSelector({
@@ -60,17 +63,17 @@ export function GuestCountSelector({
 					<div className="flex gap-2">
 						<div className="flex-1 text-center">
 							<span className="text-sm font-medium text-[#3E2723]">
-								Adult
+								{guestCount.adults > 1 ? 'Adults' : 'Adult'}
 							</span>
 						</div>
 						<div className="flex-1 text-center">
 							<span className="text-sm font-medium text-[#3E2723]">
-								Child
+								{guestCount.children > 1 ? 'Children' : 'Child'}
 							</span>
 						</div>
 						<div className="flex-1 text-center">
 							<span className="text-sm font-medium text-[#3E2723]">
-								Senior
+								{guestCount.seniors > 1 ? 'Seniors' : 'Senior'}
 							</span>
 						</div>
 					</div>
