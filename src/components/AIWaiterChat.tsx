@@ -22,6 +22,7 @@ import { QuickActions } from './chat/QuickActions';
 import { MessageList } from './chat/MessageList';
 import { MenuOverlay } from './chat/MenuOverlay';
 import { InputBar } from './chat/InputBar';
+import { GuestCountDialog } from './GuestCountDialog';
 
 // Import utilities
 import { renderHTML, getWelcomeMessage, getContext } from '../utils/chatUtils';
@@ -100,6 +101,7 @@ export function AIWaiterChat({
 	const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 	const [showMenuOverlay, setShowMenuOverlay] = useState(false);
 	const [activeMenuTab, setActiveMenuTab] = useState<string>('starter');
+	const [guestDialogOpen, setGuestDialogOpen] = useState(false);
 
 	// Use custom hook for menu drag functionality
 	const {
@@ -415,6 +417,9 @@ Is there anything else I can help you with?`,
 					onViewCart={onViewCart}
 					cartItemCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
 					onEndDemo={onEndDemo}
+					tableNumber={tableNumber}
+					guestCount={guestCount}
+					onOpenGuestDialog={() => setGuestDialogOpen(true)}
 				/>
 
 				{/* Quick Actions */}
@@ -425,8 +430,6 @@ Is there anything else I can help you with?`,
 					usedActions={usedActions}
 					specialNotes={getSpecialNotes()}
 					recommendations={getRecommendations()}
-					guestCount={guestCount}
-					onUpdateGuestCount={updateGuestCount}
 				/>
 
 				{/* Messages */}
@@ -488,6 +491,19 @@ Is there anything else I can help you with?`,
 					inputHighlight={inputHighlight}
 					flyingText={flyingText}
 					inputContainerRef={inputContainerRef as React.RefObject<HTMLDivElement>}
+				/>
+
+				{/* Guest Count Dialog */}
+				<GuestCountDialog
+					open={guestDialogOpen}
+					onConfirm={(newGuestCount) => {
+						setGuestCount(newGuestCount);
+						setGuestDialogOpen(false);
+					}}
+					onChange={(newGuestCount) => {
+						setGuestCount(newGuestCount);
+					}}
+					initialGuestCount={guestCount}
 				/>
 
 				{/* Payment Method Selector Dialog */}

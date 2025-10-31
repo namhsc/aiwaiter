@@ -2,13 +2,6 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, StickyNote, Sparkles } from 'lucide-react';
 import { Button } from '../ui/button';
-import { GuestCountSelector } from './GuestCountSelector';
-
-interface GuestCount {
-	adults: number;
-	children: number;
-	seniors: number;
-}
 
 interface QuickActionsProps {
 	showQuickActions: boolean;
@@ -17,8 +10,6 @@ interface QuickActionsProps {
 	usedActions: Set<string>;
 	specialNotes: string[];
 	recommendations: string[];
-	guestCount: GuestCount;
-	onUpdateGuestCount: (type: 'adults' | 'children' | 'seniors', delta: number) => void;
 }
 
 export function QuickActions({
@@ -28,8 +19,6 @@ export function QuickActions({
 	usedActions,
 	specialNotes,
 	recommendations,
-	guestCount,
-	onUpdateGuestCount,
 }: QuickActionsProps) {
 	return (
 		<>
@@ -75,12 +64,6 @@ export function QuickActions({
 						>
 							<div className="">
 								<div className="max-w-2xl mx-auto">
-									{/* Guest Count Selector */}
-									<GuestCountSelector
-										guestCount={guestCount}
-										onUpdateGuestCount={onUpdateGuestCount}
-									/>
-
 									{/* Special Note Actions */}
 									{specialNotes.length > 0 && (
 										<motion.div
