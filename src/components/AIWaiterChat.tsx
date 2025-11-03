@@ -516,16 +516,19 @@ Is there anything else I can help you with?`,
 							newGuestCount.children +
 							newGuestCount.seniors;
 						const detailsParts = [
-							`${newGuestCount.adults} ${
-								newGuestCount.adults === 1 ? 'adult' : 'adults'
-							}`,
-							`${newGuestCount.children} ${
-								newGuestCount.children === 1 ? 'child' : 'children'
-							}`,
-							`${newGuestCount.seniors} ${
-								newGuestCount.seniors === 1 ? 'senior' : 'seniors'
-							}`,
-						];
+							newGuestCount.adults > 0 &&
+								`${newGuestCount.adults} ${
+									newGuestCount.adults === 1 ? 'adult' : 'adults'
+								}`,
+							newGuestCount.children > 0 &&
+								`${newGuestCount.children} ${
+									newGuestCount.children === 1 ? 'child' : 'children'
+								}`,
+							newGuestCount.seniors > 0 &&
+								`${newGuestCount.seniors} ${
+									newGuestCount.seniors === 1 ? 'senior' : 'seniors'
+								}`,
+						].filter(Boolean); // 🧹 loại bỏ các phần tử là false (0)
 
 						// Create a natural language message for the AI (always include all categories)
 						const guestCountMessage = `I changed the guest count to ${totalGuests} ${
