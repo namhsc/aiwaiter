@@ -28,7 +28,6 @@ import { GuestCountDialog } from './GuestCountDialog';
 import { renderHTML, getWelcomeMessage, getContext } from '../utils/chatUtils';
 import { useMenuDrag } from '../hooks/useMenuDrag';
 
-
 interface AIWaiterChatProps {
 	onBack: () => void;
 	cart: any[];
@@ -82,7 +81,6 @@ export function AIWaiterChat({
 	isStreaming,
 	onEndDemo,
 }: AIWaiterChatProps) {
-
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [inputValue, setInputValue] = useState('');
 	const [isSpeaking, setIsSpeaking] = useState(false);
@@ -143,57 +141,64 @@ export function AIWaiterChat({
 		setShowQuickActions(openedFrom !== 'cart');
 	}, [openedFrom]);
 
-
 	// Update welcome message when messagesAI changes
 	useEffect(() => {
 		if (!messagesAI.length) {
-		  setMessages([
-			{
-			  id: '1',
-			  text: getWelcomeMessage(tableNumber, guestCount),
-			  sender: 'ai',
-			  timestamp: new Date(),
-			},
-		  ]);
+			setMessages([
+				{
+					id: '1',
+					text: getWelcomeMessage(tableNumber, guestCount),
+					sender: 'ai',
+					timestamp: new Date(),
+				},
+			]);
 		} else {
-		  setMessages([
-			{
-			  id: '1',
-			  text: getWelcomeMessage(tableNumber, guestCount),
-			  sender: 'ai',
-			  timestamp: new Date(),
-			},
-			...messagesAI.map((itemMess: ChatMessageAI) => {
-			  const { content } = itemMess;
-			  const inforCretor = JSON.parse(content.author);
+			setMessages([
+				{
+					id: '1',
+					text: getWelcomeMessage(tableNumber, guestCount),
+					sender: 'ai',
+					timestamp: new Date(),
+				},
+				...messagesAI.map((itemMess: ChatMessageAI) => {
+					const { content } = itemMess;
+					const inforCretor = JSON.parse(content.author);
+					const isUser = inforCretor.type === 'user';
+					const rawText = content.content;
 
-			  // Trích xuất suggestion IDs từ nội dung
-			  const matches = content.content.match(/\(([^)]+)\)/g) || [];
-			  const suggestionIds = matches.map((m) => m.slice(1, -1));
+					// Chỉ trích xuất gợi ý và loại bỏ dấu ngoặc khi là tin nhắn từ AI
+					const matches = isUser ? [] : rawText.match(/\(([^)]+)\)/g) || [];
+					const suggestionIds = matches.map((m) => m.slice(1, -1));
+					const suggestions = suggestionIds
+						.map((id) => menuData.find((item) => item.id === id))
+						.filter(Boolean) as MenuItem[];
 
-			  // Tìm món ăn tương ứng với suggestion IDs
-			  const suggestions = suggestionIds
-				.map((id) => menuData.find((item) => item.id === id))
-				.filter(Boolean) as MenuItem[];
+					const displayText = isUser
+						? rawText
+						: rawText.replace(/\s*\([^)]*\)/g, '');
 
-			  return {
-				id: content.id,
-				text: content.content.replace(/\s*\([^)]*\)/g, ''),
-				sender: (inforCretor.type === 'user' ? 'user' : 'ai') as 'user' | 'ai',
-				timestamp: new Date(content.created_at),
-				suggestions: suggestions.length > 0 ? suggestions : undefined,
-			  };
-			}),
-			// Thêm streaming message nếu đang streaming
-			...(isStreaming && streamingMessage ? [{
-			  id: 'streaming',
-			  text: streamingMessage,
-			  sender: 'ai' as const,
-			  timestamp: new Date(),
-			}] : []),
-		  ]);
+					return {
+						id: content.id,
+						text: displayText,
+						sender: (isUser ? 'user' : 'ai') as 'user' | 'ai',
+						timestamp: new Date(content.created_at),
+						suggestions: suggestions.length > 0 ? suggestions : undefined,
+					};
+				}),
+				// Thêm streaming message nếu đang streaming
+				...(isStreaming && streamingMessage
+					? [
+							{
+								id: 'streaming',
+								text: streamingMessage,
+								sender: 'ai' as const,
+								timestamp: new Date(),
+							},
+					  ]
+					: []),
+			]);
 		}
-	  }, [messagesAI, tableNumber, guestCount, streamingMessage, isStreaming]);
+	}, [messagesAI, tableNumber, guestCount, streamingMessage, isStreaming]);
 
 	// Get context based on cart state
 	const context = getContext(cart.length);
@@ -219,7 +224,6 @@ export function AIWaiterChat({
 	useEffect(() => {
 		scrollToBottom();
 	}, [messages, suggestedItems]);
-
 
 	// Function to toggle Quick Actions
 	const handleToggleQuickActions = () => {
@@ -379,7 +383,9 @@ export function AIWaiterChat({
 		// Add a confirmation message immediately
 		const confirmMessage: ChatMessage = {
 			id: Date.now().toString(),
-			text: `✅ **Payment method selected!** I've noted that you'd like to pay €${grandTotal.toFixed(2)} using ${method.name}.
+			text: `✅ **Payment method selected!** I've noted that you'd like to pay €${grandTotal.toFixed(
+				2,
+			)} using ${method.name}.
 
 Your payment request has been sent to our team. They will assist you with the payment process shortly.
 
@@ -401,7 +407,6 @@ Is there anything else I can help you with?`,
 			handleSendMessage(paymentMessage);
 		}, 800);
 	};
-
 
 	return (
 		<div className="fixed inset-0 bg-gradient-to-br from-[#FFF9F0] via-[#FFF9F0] to-[#FFF4E0] flex justify-center z-50">
@@ -433,7 +438,10 @@ Is there anything else I can help you with?`,
 				/>
 
 				{/* Messages */}
-				<div ref={messagesContainerRef} className="flex-1 overflow-y-auto relative">
+				<div
+					ref={messagesContainerRef}
+					className="flex-1 overflow-y-auto relative"
+				>
 					<MessageList
 						messages={messages}
 						isTyping={isTyping}
@@ -451,9 +459,9 @@ Is there anything else I can help you with?`,
 					<MenuOverlay
 						showMenuOverlay={showMenuOverlay}
 						onClose={() => {
-									setShowMenuOverlay(false);
-									setShowQuickActions(true);
-								}}
+							setShowMenuOverlay(false);
+							setShowQuickActions(true);
+						}}
 						activeMenuTab={activeMenuTab}
 						onTabChange={setActiveMenuTab}
 						menuItems={menuData}
@@ -472,25 +480,27 @@ Is there anything else I can help you with?`,
 							}
 						}}
 					/>
-																				</div>
+				</div>
 
 				{/* Input Bar */}
 				<InputBar
 					inputValue={inputValue}
 					onInputChange={(value) => {
 						setInputValue(value);
-										// Show Quick Actions when user starts typing, but only if they haven't sent a message yet
+						// Show Quick Actions when user starts typing, but only if they haven't sent a message yet
 						if (value.trim() && !showQuickActions && !hasUserSentMessage) {
-											setShowQuickActions(true);
-										}
-									}}
+							setShowQuickActions(true);
+						}
+					}}
 					onSendMessage={handleSendMessage}
 					onVoiceInput={handleVoiceInput}
 					isSpeaking={isSpeaking}
 					isTyping={isTyping}
 					inputHighlight={inputHighlight}
 					flyingText={flyingText}
-					inputContainerRef={inputContainerRef as React.RefObject<HTMLDivElement>}
+					inputContainerRef={
+						inputContainerRef as React.RefObject<HTMLDivElement>
+					}
 				/>
 
 				{/* Guest Count Dialog */}
@@ -499,6 +509,33 @@ Is there anything else I can help you with?`,
 					onConfirm={(newGuestCount) => {
 						setGuestCount(newGuestCount);
 						setGuestDialogOpen(false);
+
+						// Build guest count description
+						const totalGuests =
+							newGuestCount.adults +
+							newGuestCount.children +
+							newGuestCount.seniors;
+						const detailsParts = [
+							`${newGuestCount.adults} ${
+								newGuestCount.adults === 1 ? 'adult' : 'adults'
+							}`,
+							`${newGuestCount.children} ${
+								newGuestCount.children === 1 ? 'child' : 'children'
+							}`,
+							`${newGuestCount.seniors} ${
+								newGuestCount.seniors === 1 ? 'senior' : 'seniors'
+							}`,
+						];
+
+						// Create a natural language message for the AI (always include all categories)
+						const guestCountMessage = `I changed the guest count to ${totalGuests} ${
+							totalGuests === 1 ? 'guest' : 'guests'
+						} (${detailsParts.join(', ')})`;
+
+						// Send the guest count message after a short delay to make it feel natural
+						setTimeout(() => {
+							handleSendMessage(guestCountMessage);
+						}, 800);
 					}}
 					onChange={(newGuestCount) => {
 						setGuestCount(newGuestCount);
