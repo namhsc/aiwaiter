@@ -69,6 +69,17 @@ export default function App() {
 		setShowGuestDialog(!hasConfirmedGuestCount);
 	}, []);
 
+	// Thêm useEffect này sau useEffect đọc localStorage (sau dòng 70)
+	useEffect(() => {
+		// Lưu guestCount vào localStorage mỗi khi nó thay đổi
+		// Chỉ lưu nếu đã có giá trị hợp lệ (tổng số khách > 0)
+		const totalGuests =
+			guestCount.adults + guestCount.children + guestCount.seniors;
+		if (totalGuests > 0) {
+			localStorage.setItem('guestCount', JSON.stringify(guestCount));
+		}
+	}, [guestCount]);
+
 	// Hàm xử lý khi thay đổi số khách trong popup (cập nhật ngay lập tức)
 	const handleGuestCountChange = (guestCount: {
 		adults: number;
